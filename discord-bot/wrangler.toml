@@ -3,7 +3,7 @@ main = "src/worker.js"
 compatibility_date = "2024-09-23"
 
 [vars]
-GITHUB_REPO = "your-username/steam-family-notifier"
+GITHUB_REPO = "stefanomantova/steam-family-new-game-notification"
 GITHUB_STATS_PATH = "stats.json"
 GITHUB_BRANCH = "main"
 
