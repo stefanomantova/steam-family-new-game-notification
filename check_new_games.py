@@ -267,15 +267,14 @@ def main():
             state[steamid] = current_games
             state_changed = True
 
-    if state_changed:
-        save_json_file(STATE_FILE, state)
-        print("State updated.")
-    else:
-        print("No state changes to save.")
-
-    if stats_changed:
-        save_json_file(STATS_FILE, stats)
-        print("Stats updated.")
+    # Always (re)write both files, even with no changes, so they're
+    # guaranteed to exist on disk for the workflow's `git add` step
+    # (important on the very first runs, before either file has ever
+    # been committed to the repository).
+    save_json_file(STATE_FILE, state)
+    save_json_file(STATS_FILE, stats)
+    print("State updated." if state_changed else "No state changes.")
+    print("Stats updated." if stats_changed else "No stats changes.")
 
 
 if __name__ == "__main__":
