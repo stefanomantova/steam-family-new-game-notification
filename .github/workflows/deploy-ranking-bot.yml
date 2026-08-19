@@ -1,0 +1,29 @@
+name: Deploy Ranking Bot (Cloudflare Worker)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "discord-bot/**"
+      - ".github/workflows/deploy-ranking-bot.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: "discord-bot"
+          secrets: |
+            DISCORD_PUBLIC_KEY
+            GITHUB_TOKEN
+        env:
+          DISCORD_PUBLIC_KEY: ${{ secrets.DISCORD_PUBLIC_KEY }}
+          GITHUB_TOKEN: ${{ secrets.RANKING_BOT_GH_TOKEN }}
