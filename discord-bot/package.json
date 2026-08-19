@@ -1,0 +1,16 @@
+{
+  "name": "steam-family-ranking-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that answers the /ranking Discord command for Steam Family Notifier.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "discord-interactions": "^3.4.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}
