@@ -99,7 +99,9 @@ requirements.txt        -> dependencies
 .env.example              -> template for local environment variables
 members.example.json      -> template for the member list format (alternative to STEAM_MEMBERS)
 state.json                 -> "database" with the last checked snapshot (committed)
+stats.json                  -> gamification totals per member, spent / purchased (committed)
 .github/workflows/         -> GitHub Actions automation
+discord-bot/                -> optional real-time /ranking Discord command (Cloudflare Worker)
 README.md / README.pt-BR.md -> English / Portuguese docs
 ```
 
@@ -135,6 +137,29 @@ The snapshot is updated and committed back to the repository on every run.
 Set the `MESSAGE_LANGUAGE` environment variable / secret to `PT` for
 Portuguese messages, or `EN` (or leave it unset) for English. Any other
 value falls back to English.
+
+## Gamification: spending & purchase rankings
+
+Every time an **unambiguous new purchase** is detected (a single member
+gains access to a game nobody else in the group had before), the script
+looks up that game's current price on the Steam Store and adds it to that
+member's running totals in `stats.json` — total spent, and total games
+bought.
+
+- Games received through Family Sharing don't count again (they were
+  already counted for the original buyer).
+- If a game appears for several members at once with no prior owner in
+  the group, it's skipped for stats purposes (can't tell who actually
+  bought it).
+- The price used is the store's **current** listing at detection time,
+  not necessarily what the buyer paid (sales, currency changes, etc.
+  aren't tracked).
+- The lookup region is controlled by the optional `STORE_COUNTRY_CODE`
+  variable/secret (defaults to `"br"`, e.g. `"us"` for US dollar pricing).
+
+To turn these totals into a live `/ranking` command in Discord, see
+[`discord-bot/`](discord-bot/README.md) — a small, free Cloudflare
+Worker add-on.
 
 ## Limitations
 

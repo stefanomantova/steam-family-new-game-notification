@@ -100,7 +100,9 @@ requirements.txt            -> dependências
 .env.example                  -> modelo de variáveis para rodar local
 members.example.json          -> modelo do formato de membros (alternativa a STEAM_MEMBERS)
 state.json                     -> "banco de dados" com o snapshot da última checagem (versionado)
+stats.json                      -> totais de gamificação por membro, gasto / compras (versionado)
 .github/workflows/             -> automação do GitHub Actions
+discord-bot/                    -> comando /ranking em tempo real, opcional (Cloudflare Worker)
 README.md / README.pt-BR.md    -> docs em inglês / português
 ```
 
@@ -137,6 +139,29 @@ O snapshot é atualizado e commitado de volta no repositório a cada execução.
 Defina a variável de ambiente / secret `MESSAGE_LANGUAGE` como `PT` para
 mensagens em português, ou `EN` (ou deixe sem definir) para inglês.
 Qualquer outro valor cai para inglês por padrão.
+
+## Gamificação: ranking de gasto e de quantidade de compras
+
+Toda vez que uma **compra nova e inequívoca** é detectada (um único membro
+ganha acesso a um jogo que ninguém mais do grupo tinha antes), o script
+consulta o preço atual desse jogo na Steam Store e soma na conta desse
+membro em `stats.json` — total gasto e total de jogos comprados.
+
+- Jogos recebidos via Family Sharing não contam de novo (já foram
+  contabilizados pra quem comprou originalmente).
+- Se um jogo aparece pra vários membros ao mesmo tempo sem dono anterior
+  no grupo, ele é ignorado pra fins de estatística (não dá pra saber quem
+  comprou de fato).
+- O preço usado é o **atual** da loja no momento da detecção, não
+  necessariamente o que a pessoa pagou de fato (promoções, câmbio, etc.
+  não são rastreados).
+- A região de consulta é controlada pela variável/secret opcional
+  `STORE_COUNTRY_CODE` (padrão `"br"`; use `"us"` pra preços em dólar,
+  por exemplo).
+
+Pra transformar esses totais num comando `/ranking` em tempo real no
+Discord, veja [`discord-bot/`](discord-bot/README.pt-BR.md) — um
+complemento pequeno e gratuito rodando em Cloudflare Worker.
 
 ## Limitações
 

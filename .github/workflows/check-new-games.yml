@@ -30,12 +30,13 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           STEAM_MEMBERS: ${{ secrets.STEAM_MEMBERS }}
           MESSAGE_LANGUAGE: ${{ secrets.MESSAGE_LANGUAGE }}
+          STORE_COUNTRY_CODE: ${{ secrets.STORE_COUNTRY_CODE }}
         run: python check_new_games.py
 
       - name: Commit updated state
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add state.json
-          git diff --staged --quiet || git commit -m "Update Steam library state"
+          git add state.json stats.json
+          git diff --staged --quiet || git commit -m "Update Steam library state and stats"
           git push

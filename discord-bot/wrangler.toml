@@ -1,0 +1,12 @@
+name = "steam-family-ranking-bot"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+GITHUB_REPO = "your-username/steam-family-notifier"
+GITHUB_STATS_PATH = "stats.json"
+GITHUB_BRANCH = "main"
+
+# Secrets are NOT set here — set them with:
+#   wrangler secret put DISCORD_PUBLIC_KEY
+#   wrangler secret put GITHUB_TOKEN
