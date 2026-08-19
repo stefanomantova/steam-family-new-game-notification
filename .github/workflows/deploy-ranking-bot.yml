@@ -21,6 +21,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "discord-bot"
+          command: deploy
           secrets: |
             DISCORD_PUBLIC_KEY
             GITHUB_TOKEN
