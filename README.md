@@ -14,6 +14,46 @@ everything is configured through environment variables / secrets.
 
 ---
 
+## TL;DR — Quick Setup
+
+1. **Fork this repo** (or "Use this template")
+   → button at the top of this page
+
+2. **Get a Steam API key**
+   → https://steamcommunity.com/dev/apikey (any value works for "Domain Name")
+
+3. **Get each member's SteamID64**
+   → paste their profile URL into https://steamid.io/ (profiles must have a public game library)
+
+4. **Create a Discord webhook**
+   → Discord channel → Settings → Integrations → Webhooks → New Webhook → copy URL
+
+5. **Add these repository secrets** (Settings → Secrets and variables → Actions → New repository secret)
+
+   | Secret | Value |
+   |---|---|
+   | `STEAM_API_KEY` | key from step 2 |
+   | `DISCORD_WEBHOOK_URL` | URL from step 4 |
+   | `STEAM_MEMBERS` | JSON, e.g. `{"7656119...":"Alice","7656119...":"Bob"}` |
+   | `MESSAGE_LANGUAGE` | *(optional)* `EN` or `PT` — defaults to `EN` |
+   | `STORE_COUNTRY_CODE` | *(optional)* e.g. `br`, `us` — defaults to `br` |
+
+6. **Enable workflow write permissions**
+   → Settings → Actions → General → Workflow permissions → **Read and write permissions** → Save
+   *(required so the workflow can commit `state.json`/`stats.json` back)*
+
+7. **Test it**
+   → Actions → *Steam Family Notifier* → Run workflow. First run only saves a baseline (no messages sent).
+
+8. *(Optional)* **Set up the `/ranking` Discord command**
+   → follow [`discord-bot/README.md`](discord-bot/README.md) — needs a Discord Application (Public Key + Bot Token), a free Cloudflare account (API Token + Account ID), and 4 more repo secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `DISCORD_PUBLIC_KEY`, `RANKING_BOT_GH_TOKEN`
+   → also edit `discord-bot/wrangler.toml` → `GITHUB_REPO` to your `owner/repo`
+   → enable the Worker's `workers.dev` URL, register the `/ranking` command via `register-command.sh`, and set it as the app's Interactions Endpoint URL
+
+Done — the bot checks periodically (every 15 minutes by default) and posts to Discord when someone in the group gets a new game. Full details for every step below.
+
+---
+
 ## Option A — Running on GitHub Actions (recommended, "plug and play")
 
 1. Click **"Use this template"** at the top of the repository (or fork
@@ -39,6 +79,7 @@ everything is configured through environment variables / secrets.
    | `DISCORD_WEBHOOK_URL`   | the URL from step 4 |
    | `STEAM_MEMBERS`         | a JSON like `{"76561198000000001":"Alice","76561198000000002":"Bob"}` mapping each member's SteamID64 to a display name |
    | `MESSAGE_LANGUAGE`      | *(optional)* `EN` or `PT` — defaults to `EN` if not set |
+   | `STORE_COUNTRY_CODE`    | *(optional)* two-letter country code for game prices, e.g. `us` — defaults to `br` |
 
 6. Done. The workflow at `.github/workflows/check-new-games.yml` already
    runs on its own every hour (`cron: "0 * * * *"`). To test it without
