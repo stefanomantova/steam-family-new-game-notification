@@ -1,4 +1,10 @@
 {
   "currency": null,
-  "members": {}
+  "members": {
+    "76561198038888171": {
+      "name": "stefano4d",
+      "total_spent": 0.0,
+      "total_purchased": 1
+    }
+  }
 }
