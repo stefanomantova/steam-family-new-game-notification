@@ -1,10 +1,10 @@
 {
-  "currency": null,
+  "currency": "BRL",
   "members": {
     "76561198038888171": {
       "name": "stefano4d",
-      "total_spent": 0.0,
-      "total_purchased": 0
+      "total_spent": 1.74,
+      "total_purchased": 1
     }
   }
 }
