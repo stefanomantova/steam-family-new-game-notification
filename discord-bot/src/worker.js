@@ -53,8 +53,40 @@ function formatMoney(value, currency) {
   return currency ? `${amount} ${currency}` : amount;
 }
 
-function rankLine(index, text) {
-  return `${MEDALS[index] || `${index + 1}.`} ${text}`;
+function rankLine(position, text) {
+  return `${MEDALS[position - 1] || `${position}.`} ${text}`;
+}
+
+/**
+ * Groups a sorted (descending) list of members into ranking "slots":
+ * members with the exact same value share one slot/position, joined
+ * together on the same line. Names within a tied group are sorted
+ * alphabetically for a stable, deterministic order.
+ *
+ * Returns an array of { position, names: [...], value } — position
+ * increments by 1 per slot (dense ranking: 1, 2, 3, ... regardless of
+ * how many people share a slot), and medals apply to the first three
+ * slots, not the first three people.
+ */
+function groupByTiedValue(members, getValue) {
+  const sorted = [...members].sort((a, b) => getValue(b) - getValue(a));
+  const slots = [];
+
+  for (const member of sorted) {
+    const value = getValue(member);
+    const lastSlot = slots[slots.length - 1];
+    if (lastSlot && lastSlot.value === value) {
+      lastSlot.names.push(member.name);
+    } else {
+      slots.push({ value, names: [member.name] });
+    }
+  }
+
+  for (const slot of slots) {
+    slot.names.sort((a, b) => a.localeCompare(b));
+  }
+
+  return slots.map((slot, index) => ({ ...slot, position: index + 1 }));
 }
 
 function buildRankingMessage(stats) {
@@ -63,17 +95,19 @@ function buildRankingMessage(stats) {
     return "No purchase data yet — the ranking will show up after the group's first tracked purchases.";
   }
 
-  const bySpent = [...members].sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0));
-  const byCount = [...members].sort((a, b) => (b.total_purchased || 0) - (a.total_purchased || 0));
+  const spentSlots = groupByTiedValue(members, (m) => m.total_spent || 0);
+  const countSlots = groupByTiedValue(members, (m) => m.total_purchased || 0);
 
-  const spentLines = bySpent
+  const spentLines = spentSlots
     .slice(0, 10)
-    .map((m, i) => rankLine(i, `**${m.name}** — ${formatMoney(m.total_spent, stats.currency)}`))
+    .map((slot) =>
+      rankLine(slot.position, `**${slot.names.join(" & ")}** — ${formatMoney(slot.value, stats.currency)}`)
+    )
     .join("\n");
 
-  const countLines = byCount
+  const countLines = countSlots
     .slice(0, 10)
-    .map((m, i) => rankLine(i, `**${m.name}** — ${m.total_purchased || 0} game(s)`))
+    .map((slot) => rankLine(slot.position, `**${slot.names.join(" & ")}** — ${slot.value} game(s)`))
     .join("\n");
 
   return [
