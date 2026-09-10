@@ -82,8 +82,8 @@ Done — the bot checks periodically (every 15 minutes by default) and posts to 
    | `STORE_COUNTRY_CODE`    | *(optional)* two-letter country code for game prices, e.g. `us` — defaults to `br` |
 
 6. Done. The workflow at `.github/workflows/check-new-games.yml` already
-   runs on its own every hour (`cron: "0 * * * *"`). To test it without
-   waiting, go to **Actions → Steam Family Notifier → Run workflow**.
+   runs on its own every 15 minutes. To test it without waiting, go to
+   **Actions → Steam Family Notifier → Run workflow**.
 
 On the first run the script only saves the current state (it doesn't
 notify anything, to avoid flooding the channel with games that already
@@ -91,11 +91,14 @@ existed). From the second run on, any new game triggers an alert.
 
 ### Adjusting the frequency
 
-The default is every hour. To change it, edit the `cron` line in
-`.github/workflows/check-new-games.yml` (standard cron syntax, in UTC).
-Examples: `*/15 * * * *` (every 15 min), `0 */6 * * *` (every 6h).
-GitHub Actions is free for this kind of use even on private repos
-(uses very few minutes per month at this frequency).
+To change it, edit the `cron` line in `.github/workflows/check-new-games.yml`
+(standard cron syntax, in UTC). GitHub Actions is free for this kind of
+use even on private repos, but note that scheduled ("cron") workflows on
+low-activity repos aren't guaranteed to run exactly on time — GitHub can
+delay or skip runs during high load, especially at popular minutes like
+`:00`/`:15`/`:30`/`:45`. If you need reliable timing, consider triggering
+the workflow externally via `workflow_dispatch` (e.g. a free service like
+cron-job.org calling the GitHub API) instead of relying on `schedule`.
 
 ---
 
@@ -136,12 +139,15 @@ Scheduler** (Windows), **cron** (Linux/macOS), or **launchd** (macOS).
 
 ```
 check_new_games.py      -> main script
+backfill_purchase.py     -> one-off tool to manually fix/add a purchase in stats.json
 requirements.txt        -> dependencies
 .env.example              -> template for local environment variables
 members.example.json      -> template for the member list format (alternative to STEAM_MEMBERS)
 state.json                 -> "database" with the last checked snapshot (committed)
 stats.json                  -> gamification totals per member, spent / purchased (committed)
-.github/workflows/         -> GitHub Actions automation
+.github/workflows/
+  check-new-games.yml        -> the scheduled notifier
+  backfill-purchase.yml      -> manual "Backfill Purchase Stats" workflow (runs backfill_purchase.py)
 discord-bot/                -> optional real-time /ranking Discord command (Cloudflare Worker)
 README.md / README.pt-BR.md -> English / Portuguese docs
 ```
@@ -171,6 +177,9 @@ If the same game shows up for several members in the same run, the script
 sends a **single** message for that game (not one per recipient), since
 what matters is the game and who made it available.
 
+Free games are detected and skipped entirely — no Discord message, no
+ranking stats (see the Gamification section below for details).
+
 The snapshot is updated and committed back to the repository on every run.
 
 ## Message language
@@ -183,24 +192,73 @@ value falls back to English.
 
 Every time an **unambiguous new purchase** is detected (a single member
 gains access to a game nobody else in the group had before), the script
-looks up that game's current price on the Steam Store and adds it to that
-member's running totals in `stats.json` — total spent, and total games
-bought.
+looks up that game's price and adds it to that member's running totals in
+`stats.json` — total spent, and total games bought.
 
-- Games received through Family Sharing don't count again (they were
-  already counted for the original buyer).
-- If a game appears for several members at once with no prior owner in
-  the group, it's skipped for stats purposes (can't tell who actually
-  bought it).
-- The price used is the store's **current** listing at detection time,
-  not necessarily what the buyer paid (sales, currency changes, etc.
-  aren't tracked).
-- The lookup region is controlled by the optional `STORE_COUNTRY_CODE`
-  variable/secret (defaults to `"br"`, e.g. `"us"` for US dollar pricing).
+### Free games are ignored completely
+
+If the Steam Store marks the title as free-to-play (`is_free`), it's
+skipped entirely: no Discord message, no stats update. This is checked
+directly against Steam's own flag — a missing price is *not* treated as
+"free" (see next section for why that distinction matters).
+
+### Price lookup order (for paid games)
+
+1. The game's own standalone price (`price_overview`) — the normal case.
+2. If the game has no standalone listing (only sold as part of a
+   bundle/package, no individual SKU) — the cheapest bundle/package price
+   that grants it, since that's what the buyer actually paid. The Discord
+   message gets a small note: *"(price counted from the bundle/package it
+   came in)"*.
+3. If the appid has no storefront page at all (`success: false` — some
+   library-only "wrapper" appids are like this) — a best-effort lookup by
+   **searching the Steam Store by name** and using the closest match's
+   price. Same bundle note applies. This relies on Steam's informal store
+   search endpoint, so it's less precise than a direct appid lookup.
+4. If none of the above finds a price — the purchase is still announced,
+   but flagged as **not counted in the ranking**, and the message tells
+   whoever's running the group which command to run to fix it manually
+   (see below).
+
+Other cases that are intentionally **not** counted in the ranking:
+- Games received through Family Sharing (already counted for the
+  original buyer).
+- A game appearing for several members at once with no prior owner in
+  the group (can't tell who actually bought it).
+
+The lookup region is controlled by the optional `STORE_COUNTRY_CODE`
+variable/secret (defaults to `"br"`, e.g. `"us"` for US dollar pricing).
+
+### Fixing an uncounted purchase: `backfill_purchase.py`
+
+When a purchase can't be priced automatically, the Discord message says
+so and includes the exact `steamid` and `appid` needed to fix it. Two ways
+to run the fix:
+
+**Via GitHub Actions (no local install needed):** Actions → *Backfill
+Purchase Stats* → Run workflow → fill in `steamid` and `appid` (and
+optionally `game_name`, a manual `price`/`currency` override, and whether
+to `notify` Discord about the correction). It updates `stats.json` and
+commits it back automatically.
+
+**Locally:**
+```bash
+python backfill_purchase.py --steamid 76561198000000001 --appid 4659620
+# add --notify to also post a Discord message about the correction
+# add --price 59.90 --currency BRL to override the price manually,
+# for the rare case where even the store-search fallback finds nothing
+```
+
+This only touches `stats.json` — the game is presumably already tracked
+in `state.json`, so a normal run won't (and shouldn't) treat it as "new"
+again.
+
+### Live `/ranking` command
 
 To turn these totals into a live `/ranking` command in Discord, see
 [`discord-bot/`](discord-bot/README.md) — a small, free Cloudflare
-Worker add-on.
+Worker add-on. Members tied on the same value/count are grouped on the
+same line in the ranking (e.g. `🥇 Alice & Bob — R$ 199.90`).
 
 ## Limitations
 
@@ -212,6 +270,10 @@ Worker add-on.
   already had the game, not official Steam data — in rare cases it can
   get the source wrong (e.g. if two members gain access to the same game
   in the same run).
+- Price is the store's price at detection time, not necessarily what the
+  buyer actually paid (sales, currency changes, etc. aren't tracked).
+- The store-search price fallback (step 3 above) relies on an informal,
+  undocumented Steam endpoint — reliable in practice, but not guaranteed.
 
 ## License
 
