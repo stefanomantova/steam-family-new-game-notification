@@ -55,6 +55,7 @@ STORE_COUNTRY_CODE = (os.environ.get("STORE_COUNTRY_CODE") or "br").strip().lowe
 
 GET_OWNED_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
 STORE_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails"
+STORE_SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
 
 # Used only for the bundle/package price fallback (see fetch_game_details),
 # since Steam's package pricing doesn't come with an explicit currency
@@ -136,7 +137,49 @@ def fetch_owned_games(steamid: str, api_key: str) -> dict:
     return {str(g["appid"]): g.get("name", f"App {g['appid']}") for g in games}
 
 
-def fetch_game_details(appid: str, country_code: str):
+def fetch_price_via_search(game_name: str, country_code: str):
+    """Last-resort price lookup: searches the Steam Store by name and
+    uses the closest-matching result's price. Used when an appid has no
+    storefront page of its own at all (appdetails returns success:false
+    with no data whatsoever — happens for some bundle-wrapper appids
+    that only exist as a library entry, never as a browsable app page).
+
+    This relies on Steam's public (but informal/undocumented) store
+    search endpoint, so it's inherently less precise than a direct
+    appid lookup — name matching isn't guaranteed exact. Returns
+    (price, currency), or (None, None) if nothing usable was found.
+    """
+    if not game_name:
+        return None, None
+    try:
+        params = {"term": game_name, "cc": country_code, "l": "english"}
+        resp = requests.get(STORE_SEARCH_URL, params=params, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("items") or []
+        if not items:
+            return None, None
+
+        normalized = game_name.strip().lower()
+        exact_match = next(
+            (item for item in items if item.get("name", "").strip().lower() == normalized),
+            None,
+        )
+        chosen = exact_match or items[0]
+
+        price_info = chosen.get("price")
+        if not price_info:
+            return None, None  # free, or price hidden/unavailable for this region
+
+        price = price_info.get("final", 0) / 100
+        currency = price_info.get("currency")
+        return price, currency
+    except Exception as e:
+        print(f"Error searching the store for '{game_name}': {e}")
+        return None, None
+
+
+def fetch_game_details(appid: str, country_code: str, game_name: str = None):
     """Returns (is_free, price, currency, from_bundle) for the given
     appid on the Steam Store.
 
@@ -149,19 +192,20 @@ def fetch_game_details(appid: str, country_code: str):
     - price: the CURRENT listed price. For a game with its own
       standalone listing, this is that price. For a game only sold as
       part of a bundle/package (no individual price_overview), this
-      falls back to the cheapest bundle/package price that grants it —
-      i.e. what the buyer actually had to pay to get the game. None if
-      no price could be determined at all (rare: fully delisted, no
-      package pricing available, etc.) — the caller should treat that
-      as "price unknown", not as free and not as R$0.
+      falls back to the cheapest bundle/package price that grants it.
+      If the appid has no storefront page at all (appdetails returns
+      success:false), falls back further to a store-search-by-name
+      lookup when `game_name` is provided. None if no price could be
+      determined at all — the caller should treat that as "price
+      unknown", not as free and not as R$0.
     - currency: the store's currency code for that price (e.g. "BRL")
-      when available. For the bundle-price fallback, Steam's API
-      doesn't label the currency explicitly, so it's inferred from
-      `country_code` via a small lookup table (falls back to None for
-      uncommon country codes).
-    - from_bundle: True if `price` came from the bundle/package
-      fallback rather than the game's own standalone price_overview —
-      used to add a transparency note in the Discord message.
+      when available. For the bundle-price fallback, it's inferred
+      from `country_code` via a small lookup table (None for uncommon
+      country codes).
+    - from_bundle: True if `price` came from the bundle/package or
+      store-search fallback rather than the game's own standalone
+      price_overview — used to add a transparency note in the Discord
+      message.
 
     On any error, defaults to (False, None, None, False) — treated as
     a paid game with an unknown price, so an API hiccup never silently
@@ -174,6 +218,13 @@ def fetch_game_details(appid: str, country_code: str):
         data = resp.json()
         entry = data.get(str(appid), {})
         if not entry.get("success"):
+            # No storefront page for this appid at all — last resort:
+            # search by name (only possible if the caller knows it,
+            # e.g. from GetOwnedGames, since we have no data to read a
+            # name from here).
+            price, currency = fetch_price_via_search(game_name, country_code)
+            if price is not None:
+                return False, price, currency, True
             return False, None, None, False
 
         details = entry.get("data", {})
@@ -201,6 +252,11 @@ def fetch_game_details(appid: str, country_code: str):
         if sub_prices:
             price = min(sub_prices) / 100
             currency = COUNTRY_CURRENCY.get(country_code)
+            return False, price, currency, True
+
+        # Still nothing — try the store-search-by-name fallback here too.
+        price, currency = fetch_price_via_search(game_name, country_code)
+        if price is not None:
             return False, price, currency, True
 
         return False, None, None, False
@@ -298,7 +354,7 @@ def main():
         # message, no ranking stats. Paid games with an unknown price
         # (e.g. bundle-exclusive titles) still get notified, just not
         # counted towards the ranking.
-        is_free, price, currency, from_bundle = fetch_game_details(appid, STORE_COUNTRY_CODE)
+        is_free, price, currency, from_bundle = fetch_game_details(appid, STORE_COUNTRY_CODE, game_name)
         if is_free:
             print(f"Skipping free game: {game_name} (appid {appid})")
             continue

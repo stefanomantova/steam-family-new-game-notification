@@ -94,11 +94,18 @@ def main():
     members = load_members()
     buyer_name = members.get(args.steamid, args.steamid)
 
+    # Fetch the name first (even if appdetails fails for pricing, the
+    # basic name lookup often still works — and if not, this becomes
+    # the input to the store-search price fallback below).
+    game_name = args.game_name or fetch_game_name(args.appid, STORE_COUNTRY_CODE)
+
     if args.price is not None:
         # Manual override: skip the Steam Store lookup for price entirely.
         is_free, price, currency, from_bundle = False, args.price, args.currency, False
     else:
-        is_free, price, currency, from_bundle = fetch_game_details(args.appid, STORE_COUNTRY_CODE)
+        is_free, price, currency, from_bundle = fetch_game_details(
+            args.appid, STORE_COUNTRY_CODE, game_name
+        )
         if is_free:
             print("This appid is marked as free by the Steam Store — nothing to backfill.")
             return
@@ -112,8 +119,6 @@ def main():
                 f"--appid {args.appid} --price 59.90 --currency BRL"
             )
             return
-
-    game_name = args.game_name or fetch_game_name(args.appid, STORE_COUNTRY_CODE)
 
     stats = load_json_file(STATS_FILE, {"currency": None, "members": {}})
     stats.setdefault("members", {})
