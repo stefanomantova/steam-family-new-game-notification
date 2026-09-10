@@ -5,7 +5,7 @@ group adds a new game.
 
 Runs entirely in the cloud via **GitHub Actions** (no need to keep any
 computer on) and can also run locally on **Windows, macOS, or Linux**,
-since it's plain Python.
+using Node.js and TypeScript.
 
 No personal data (SteamIDs, API key, webhook) lives in the code —
 everything is configured through environment variables / secrets.
@@ -112,22 +112,16 @@ your own machine/server instead of GitHub Actions.
 git clone <your-fork-url>
 cd steam-family-notifier
 
-# 2. Create a virtual environment (optional, but recommended)
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
+# 2. Install dependencies (Node.js 20 or newer)
+npm ci
 
 # 4. Configure your variables
 cp .env.example .env
 # edit .env with your STEAM_API_KEY, DISCORD_WEBHOOK_URL, STEAM_MEMBERS, etc.
 
-# 5. Run it
-python check_new_games.py
+# 4. Build and run it
+npm run build
+npm run check-new-games
 ```
 
 To run it periodically on your own machine, schedule it with **Task
@@ -138,16 +132,16 @@ Scheduler** (Windows), **cron** (Linux/macOS), or **launchd** (macOS).
 ## Project structure
 
 ```
-check_new_games.py      -> main script
-backfill_purchase.py     -> one-off tool to manually fix/add a purchase in stats.json
-requirements.txt        -> dependencies
+src/                      -> TypeScript domain, application, ports, adapters, and CLIs
+package.json              -> Node.js commands and dependencies
+package-lock.json         -> reproducible dependency versions
 .env.example              -> template for local environment variables
 members.example.json      -> template for the member list format (alternative to STEAM_MEMBERS)
 state.json                 -> "database" with the last checked snapshot (committed)
 stats.json                  -> gamification totals per member, spent / purchased (committed)
 .github/workflows/
   check-new-games.yml        -> the scheduled notifier
-  backfill-purchase.yml      -> manual "Backfill Purchase Stats" workflow (runs backfill_purchase.py)
+   backfill-purchase.yml      -> manual "Backfill Purchase Stats" workflow
 discord-bot/                -> optional real-time /ranking Discord command (Cloudflare Worker)
 README.md / README.pt-BR.md -> English / Portuguese docs
 ```
@@ -229,7 +223,7 @@ Other cases that are intentionally **not** counted in the ranking:
 The lookup region is controlled by the optional `STORE_COUNTRY_CODE`
 variable/secret (defaults to `"br"`, e.g. `"us"` for US dollar pricing).
 
-### Fixing an uncounted purchase: `backfill_purchase.py`
+### Fixing an uncounted purchase: the backfill CLI
 
 When a purchase can't be priced automatically, the Discord message says
 so and includes the exact `steamid` and `appid` needed to fix it. Two ways
@@ -243,7 +237,8 @@ commits it back automatically.
 
 **Locally:**
 ```bash
-python backfill_purchase.py --steamid 76561198000000001 --appid 4659620
+npm run build
+npm run backfill-purchase -- --steamid 76561198000000001 --appid 4659620
 # add --notify to also post a Discord message about the correction
 # add --price 59.90 --currency BRL to override the price manually,
 # for the rare case where even the store-search fallback finds nothing

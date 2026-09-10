@@ -16,13 +16,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "20"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: npm ci
 
       - name: Run check
         env:
@@ -31,7 +31,7 @@ jobs:
           STEAM_MEMBERS: ${{ secrets.STEAM_MEMBERS }}
           MESSAGE_LANGUAGE: ${{ secrets.MESSAGE_LANGUAGE }}
           STORE_COUNTRY_CODE: ${{ secrets.STORE_COUNTRY_CODE }}
-        run: python check_new_games.py
+        run: npm run build && npm run check-new-games
 
       - name: Commit updated state
         run: |

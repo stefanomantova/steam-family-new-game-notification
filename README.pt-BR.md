@@ -6,7 +6,7 @@ novo.
 
 Funciona 100% na nuvem via **GitHub Actions** (não precisa deixar nenhum
 computador ligado) e também pode rodar localmente em **Windows, macOS ou
-Linux**, já que é código Python puro.
+Linux**, usando Node.js e TypeScript.
 
 Nenhum dado pessoal (SteamIDs, chave de API, webhook) fica no código —
 tudo é configurado por variáveis de ambiente / secrets.
@@ -115,22 +115,16 @@ própria máquina/servidor em vez do GitHub Actions.
 git clone <url-do-seu-fork>
 cd steam-family-notifier
 
-# 2. Crie um ambiente virtual (opcional, mas recomendado)
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# 3. Instale as dependências
-pip install -r requirements.txt
+# 2. Instale as dependências (Node.js 20 ou mais recente)
+npm ci
 
 # 4. Configure suas variáveis
 cp .env.example .env
 # edite o .env com sua STEAM_API_KEY, DISCORD_WEBHOOK_URL, STEAM_MEMBERS etc.
 
-# 5. Rode
-python check_new_games.py
+# 4. Compile e rode
+npm run build
+npm run check-new-games
 ```
 
 Pra rodar de tempos em tempos localmente, agende com o **Agendador de
@@ -141,16 +135,16 @@ Tarefas** (Windows), **cron** (Linux/macOS) ou **launchd** (macOS).
 ## Estrutura do projeto
 
 ```
-check_new_games.py          -> script principal
-backfill_purchase.py         -> ferramenta pra corrigir/adicionar manualmente uma compra no stats.json
-requirements.txt            -> dependências
+src/                          -> domínio, aplicação, portas, adaptadores e CLIs em TypeScript
+package.json                  -> comandos e dependências do Node.js
+package-lock.json             -> versões reproduzíveis das dependências
 .env.example                  -> modelo de variáveis para rodar local
 members.example.json          -> modelo do formato de membros (alternativa a STEAM_MEMBERS)
 state.json                     -> "banco de dados" com o snapshot da última checagem (versionado)
 stats.json                      -> totais de gamificação por membro, gasto / compras (versionado)
 .github/workflows/
   check-new-games.yml             -> o notificador agendado
-  backfill-purchase.yml           -> workflow manual "Backfill Purchase Stats" (roda o backfill_purchase.py)
+   backfill-purchase.yml           -> workflow manual "Backfill Purchase Stats"
 discord-bot/                    -> comando /ranking em tempo real, opcional (Cloudflare Worker)
 README.md / README.pt-BR.md    -> docs em inglês / português
 ```
@@ -236,7 +230,7 @@ A região de consulta é controlada pela variável/secret opcional
 `STORE_COUNTRY_CODE` (padrão `"br"`; use `"us"` pra preços em dólar, por
 exemplo).
 
-### Corrigindo uma compra não contabilizada: `backfill_purchase.py`
+### Corrigindo uma compra não contabilizada: CLI de backfill
 
 Quando uma compra não pode ser precificada automaticamente, a mensagem no
 Discord avisa isso e já inclui o `steamid` e `appid` exatos necessários
@@ -250,7 +244,8 @@ commita de volta sozinho.
 
 **Localmente:**
 ```bash
-python backfill_purchase.py --steamid 76561198000000001 --appid 4659620
+npm run build
+npm run backfill-purchase -- --steamid 76561198000000001 --appid 4659620
 # adicione --notify pra também postar uma mensagem no Discord sobre a correção
 # adicione --price 59.90 --currency BRL pra definir o preço manualmente,
 # pro caso raro em que nem a busca por nome encontra nada

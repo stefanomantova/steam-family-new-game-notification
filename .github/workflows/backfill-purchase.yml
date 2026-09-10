@@ -33,13 +33,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "20"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: npm ci
 
       - name: Run backfill
         env:
@@ -48,7 +48,7 @@ jobs:
           MESSAGE_LANGUAGE: ${{ secrets.MESSAGE_LANGUAGE }}
           STORE_COUNTRY_CODE: ${{ secrets.STORE_COUNTRY_CODE }}
         run: |
-          CMD=(python backfill_purchase.py --steamid "${{ inputs.steamid }}" --appid "${{ inputs.appid }}")
+          CMD=(node dist/cli/backfill-purchase.js --steamid "${{ inputs.steamid }}" --appid "${{ inputs.appid }}")
           if [ -n "${{ inputs.game_name }}" ]; then
             CMD+=(--game-name "${{ inputs.game_name }}")
           fi
@@ -61,6 +61,7 @@ jobs:
           if [ "${{ inputs.notify }}" = "true" ]; then
             CMD+=(--notify)
           fi
+          npm run build
           "${CMD[@]}"
 
       - name: Commit updated stats
