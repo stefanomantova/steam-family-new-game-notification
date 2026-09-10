@@ -12,6 +12,12 @@ on:
       game_name:
         description: "Override game name (optional — auto-fetched from Steam if left empty)"
         required: false
+      price:
+        description: "Manual price override (optional — only needed if automatic lookup fails, e.g. '62.90')"
+        required: false
+      currency:
+        description: "Currency code for the manual price above (optional, e.g. BRL)"
+        required: false
       notify:
         description: "Also post a Discord message about this backfilled purchase"
         type: boolean
@@ -45,6 +51,12 @@ jobs:
           CMD=(python backfill_purchase.py --steamid "${{ inputs.steamid }}" --appid "${{ inputs.appid }}")
           if [ -n "${{ inputs.game_name }}" ]; then
             CMD+=(--game-name "${{ inputs.game_name }}")
+          fi
+          if [ -n "${{ inputs.price }}" ]; then
+            CMD+=(--price "${{ inputs.price }}")
+          fi
+          if [ -n "${{ inputs.currency }}" ]; then
+            CMD+=(--currency "${{ inputs.currency }}")
           fi
           if [ "${{ inputs.notify }}" = "true" ]; then
             CMD+=(--notify)

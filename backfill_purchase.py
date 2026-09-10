@@ -15,6 +15,13 @@ Usage:
   python backfill_purchase.py --steamid 76561198000000001 --appid 4659620
   python backfill_purchase.py --steamid 76561198000000001 --appid 4659620 --notify
 
+  # If Steam's API can't determine a price at all (some appids have no
+  # storefront page of their own — e.g. bundle-wrapper appids — and
+  # return "success: false" with no data whatsoever), pass the price
+  # you saw on the store page manually:
+  python backfill_purchase.py --steamid 76561198000000001 --appid 4659620 \
+      --price 62.90 --currency BRL --game-name "The Game's Name"
+
 Run from the same folder as check_new_games.py (it imports from it), with
 the same environment variables available (a local .env works, same as
 for check_new_games.py). STEAM_API_KEY isn't needed for this script.
@@ -64,6 +71,20 @@ def main():
         help="Override the game name shown (fetched from the Steam Store if omitted)",
     )
     parser.add_argument(
+        "--price",
+        type=float,
+        help=(
+            "Manually specify the price paid, bypassing automatic lookup. "
+            "Use this when Steam's API can't determine a price at all "
+            "(e.g. an appid with no storefront page of its own — "
+            "returns success:false with no data whatsoever)."
+        ),
+    )
+    parser.add_argument(
+        "--currency",
+        help="Currency code for --price, e.g. BRL (display only, optional).",
+    )
+    parser.add_argument(
         "--notify",
         action="store_true",
         help="Also post a Discord message about this backfilled purchase",
@@ -73,17 +94,24 @@ def main():
     members = load_members()
     buyer_name = members.get(args.steamid, args.steamid)
 
-    is_free, price, currency, from_bundle = fetch_game_details(args.appid, STORE_COUNTRY_CODE)
-    if is_free:
-        print("This appid is marked as free by the Steam Store — nothing to backfill.")
-        return
-    if price is None:
-        print(
-            "Could not determine a price for this appid (not even a bundle/package "
-            "price). Nothing was added — you may need to set the price manually by "
-            "editing stats.json directly."
-        )
-        return
+    if args.price is not None:
+        # Manual override: skip the Steam Store lookup for price entirely.
+        is_free, price, currency, from_bundle = False, args.price, args.currency, False
+    else:
+        is_free, price, currency, from_bundle = fetch_game_details(args.appid, STORE_COUNTRY_CODE)
+        if is_free:
+            print("This appid is marked as free by the Steam Store — nothing to backfill.")
+            return
+        if price is None:
+            print(
+                "Could not determine a price for this appid automatically (it may "
+                "have no storefront page of its own — common for some bundle-wrapper "
+                "appids). Nothing was added. Re-run with --price <value> "
+                "(and optionally --currency) to set it manually, e.g.:\n"
+                f"  python backfill_purchase.py --steamid {args.steamid} "
+                f"--appid {args.appid} --price 59.90 --currency BRL"
+            )
+            return
 
     game_name = args.game_name or fetch_game_name(args.appid, STORE_COUNTRY_CODE)
 
