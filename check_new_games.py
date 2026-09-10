@@ -2,11 +2,11 @@
 Steam Family Notifier
 ----------------------
 Checks each group member's Steam game library (via the Steam Web API)
-and posts a message on Discord when a new PAID game shows up. Free games
-are intentionally ignored — no notification, no ranking stats. Also
-tracks lightweight gamification stats (total spent / total games bought)
-for unambiguous purchase events, used by the optional /ranking Discord
-command (see discord-bot/).
+and posts a message on Discord when a new PAID game shows up. Free
+games are intentionally ignored — no notification, no ranking stats.
+Also tracks lightweight gamification stats (total spent / total games
+bought) for unambiguous purchase events, used by the optional /ranking
+Discord command (see discord-bot/).
 
 Pure Python (requests + optional dotenv) -> runs the same way on
 Windows, macOS and Linux, either locally or on GitHub Actions.
@@ -56,15 +56,31 @@ STORE_COUNTRY_CODE = (os.environ.get("STORE_COUNTRY_CODE") or "br").strip().lowe
 GET_OWNED_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
 STORE_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails"
 
+# Used only for the bundle/package price fallback (see fetch_game_details),
+# since Steam's package pricing doesn't come with an explicit currency
+# label the way price_overview does. Covers common storefronts; add more
+# as needed.
+COUNTRY_CURRENCY = {
+    "br": "BRL", "us": "USD", "gb": "GBP", "ca": "CAD", "au": "AUD",
+    "de": "EUR", "fr": "EUR", "es": "EUR", "it": "EUR", "nl": "EUR",
+    "pt": "EUR", "jp": "JPY", "ar": "ARS", "mx": "MXN",
+}
+
 MESSAGES = {
     "EN": {
         "shared": "🔗 A new game is available on Family Sharing! **{game}**, shared by **{source}**.",
         "purchased": "🎮 **{buyer}** bought a new game: **{game}**",
+        "bundle_note": "(price counted from the bundle/package it came in)",
+        "retroactive_note": "(retroactively added)",
+        "purchased_price_unknown": "🎮 **{buyer}** bought a new game: **{game}** (price unknown, not counted in the ranking)",
         "purchased_ambiguous": "🎮 A new game appeared in the group: **{game}** (not counted in the ranking, can't tell who bought it)",
     },
     "PT": {
         "shared": "🔗 Um jogo novo está disponível no Family Sharing! **{game}**, compartilhado por **{source}**.",
         "purchased": "🎮 **{buyer}** comprou um jogo novo: **{game}**",
+        "bundle_note": "(preço contabilizado a partir do bundle/pacote em que veio)",
+        "retroactive_note": "(adicionado retroativamente)",
+        "purchased_price_unknown": "🎮 **{buyer}** comprou um jogo novo: **{game}** (preço desconhecido, não contabilizado no ranking)",
         "purchased_ambiguous": "🎮 Um jogo novo apareceu no grupo: **{game}** (não contabilizado no ranking, não dá pra saber quem comprou)",
     },
 }
@@ -121,43 +137,76 @@ def fetch_owned_games(steamid: str, api_key: str) -> dict:
 
 
 def fetch_game_details(appid: str, country_code: str):
-    """Returns (is_free, price, currency) for the given appid on the
-    Steam Store.
+    """Returns (is_free, price, currency, from_bundle) for the given
+    appid on the Steam Store.
 
-    - is_free: True if the store lists this as a free-to-play title.
-    - price: the CURRENT listed price (not necessarily what the buyer
-      actually paid — sales, regional pricing changes, etc. aren't
-      accounted for). 0.0 for free games or if no price is listed.
-    - currency: the store's currency code for that price (e.g. "BRL"),
-      or None if unavailable.
+    - is_free: taken directly from the store's own "is_free" flag —
+      the authoritative signal for free-to-play titles. We do NOT
+      infer "free" just from a missing price_overview, because some
+      PAID games have no individual price_overview (e.g. titles only
+      sold as part of a bundle, with no standalone SKU) — treating
+      those as free would incorrectly skip a real purchase.
+    - price: the CURRENT listed price. For a game with its own
+      standalone listing, this is that price. For a game only sold as
+      part of a bundle/package (no individual price_overview), this
+      falls back to the cheapest bundle/package price that grants it —
+      i.e. what the buyer actually had to pay to get the game. None if
+      no price could be determined at all (rare: fully delisted, no
+      package pricing available, etc.) — the caller should treat that
+      as "price unknown", not as free and not as R$0.
+    - currency: the store's currency code for that price (e.g. "BRL")
+      when available. For the bundle-price fallback, Steam's API
+      doesn't label the currency explicitly, so it's inferred from
+      `country_code` via a small lookup table (falls back to None for
+      uncommon country codes).
+    - from_bundle: True if `price` came from the bundle/package
+      fallback rather than the game's own standalone price_overview —
+      used to add a transparency note in the Discord message.
 
-    On any error, defaults to (False, 0.0, None) so an API hiccup
-    doesn't silently swallow a real paid-game notification.
+    On any error, defaults to (False, None, None, False) — treated as
+    a paid game with an unknown price, so an API hiccup never silently
+    swallows a real purchase notification.
     """
-    params = {"appids": appid, "cc": country_code, "filters": "basic,price_overview"}
+    params = {"appids": appid, "cc": country_code}  # no filters: need package_groups too
     try:
         resp = requests.get(STORE_APPDETAILS_URL, params=params, timeout=30)
         resp.raise_for_status()
         data = resp.json()
         entry = data.get(str(appid), {})
         if not entry.get("success"):
-            return False, 0.0, None
+            return False, None, None, False
 
         details = entry.get("data", {})
         is_free = bool(details.get("is_free", False))
+        if is_free:
+            return True, 0.0, None, False
 
         price_overview = details.get("price_overview")
-        if not price_overview:
-            # No listed price at all (common for free-to-play titles
-            # that don't always set is_free) — treat as free either way.
-            return True, 0.0, None
+        if price_overview:
+            price = price_overview.get("final", 0) / 100
+            currency = price_overview.get("currency")
+            return False, price, currency, False
 
-        price = price_overview.get("final", 0) / 100
-        currency = price_overview.get("currency")
-        return is_free, price, currency
+        # Paid game with no standalone price_overview — common for
+        # titles only sold as part of a bundle/package. Fall back to
+        # the cheapest bundle/package price that includes this game,
+        # since that's what the buyer actually paid to get it.
+        sub_prices = []
+        for group in details.get("package_groups") or []:
+            for sub in group.get("subs", []):
+                cents = sub.get("price_in_cents_with_discount")
+                if cents:
+                    sub_prices.append(cents)
+
+        if sub_prices:
+            price = min(sub_prices) / 100
+            currency = COUNTRY_CURRENCY.get(country_code)
+            return False, price, currency, True
+
+        return False, None, None, False
     except Exception as e:
         print(f"Error fetching store details for appid {appid}: {e}")
-        return False, 0.0, None
+        return False, None, None, False
 
 
 def send_discord_message(webhook_url: str, content: str):
@@ -246,8 +295,10 @@ def main():
         game_name = next(iter(recipients.values()))
 
         # Free games are intentionally ignored entirely: no Discord
-        # message, no ranking stats.
-        is_free, price, currency = fetch_game_details(appid, STORE_COUNTRY_CODE)
+        # message, no ranking stats. Paid games with an unknown price
+        # (e.g. bundle-exclusive titles) still get notified, just not
+        # counted towards the ranking.
+        is_free, price, currency, from_bundle = fetch_game_details(appid, STORE_COUNTRY_CODE)
         if is_free:
             print(f"Skipping free game: {game_name} (appid {appid})")
             continue
@@ -261,13 +312,19 @@ def main():
             # buyer back when they first got it, so no stats update here.
             message = texts["shared"].format(game=game_name, source=source_name)
         elif len(recipient_ids) == 1:
-            # Unambiguous new purchase: use the price/currency already
-            # fetched above and add it to that member's running totals.
             buyer_steamid = next(iter(recipient_ids))
             buyer_name = members.get(buyer_steamid, buyer_steamid)
-            update_stats(stats, buyer_steamid, buyer_name, price, currency)
-            stats_changed = True
-            message = texts["purchased"].format(buyer=buyer_name, game=game_name)
+            if price is None:
+                # Truly no price could be determined (not even a
+                # bundle/package price) — still notify, but don't guess
+                # a number for the ranking.
+                message = texts["purchased_price_unknown"].format(buyer=buyer_name, game=game_name)
+            else:
+                update_stats(stats, buyer_steamid, buyer_name, price, currency)
+                stats_changed = True
+                message = texts["purchased"].format(buyer=buyer_name, game=game_name)
+                if from_bundle:
+                    message += " " + texts["bundle_note"]
         else:
             # Appeared from scratch for multiple members at once, with no
             # prior owner in the group: likely a purchase with sharing

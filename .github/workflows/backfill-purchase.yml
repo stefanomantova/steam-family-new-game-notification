@@ -1,0 +1,60 @@
+name: Backfill Purchase Stats
+
+on:
+  workflow_dispatch:
+    inputs:
+      steamid:
+        description: "Buyer's SteamID64"
+        required: true
+      appid:
+        description: "Game's Steam appid"
+        required: true
+      game_name:
+        description: "Override game name (optional — auto-fetched from Steam if left empty)"
+        required: false
+      notify:
+        description: "Also post a Discord message about this backfilled purchase"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run backfill
+        env:
+          STEAM_MEMBERS: ${{ secrets.STEAM_MEMBERS }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          MESSAGE_LANGUAGE: ${{ secrets.MESSAGE_LANGUAGE }}
+          STORE_COUNTRY_CODE: ${{ secrets.STORE_COUNTRY_CODE }}
+        run: |
+          CMD=(python backfill_purchase.py --steamid "${{ inputs.steamid }}" --appid "${{ inputs.appid }}")
+          if [ -n "${{ inputs.game_name }}" ]; then
+            CMD+=(--game-name "${{ inputs.game_name }}")
+          fi
+          if [ "${{ inputs.notify }}" = "true" ]; then
+            CMD+=(--notify)
+          fi
+          "${CMD[@]}"
+
+      - name: Commit updated stats
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add stats.json
+          git diff --staged --quiet || git commit -m "Backfill purchase stats"
+          git push
