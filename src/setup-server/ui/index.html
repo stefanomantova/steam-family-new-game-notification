@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steam Family Notifier — Setup Wizard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-background"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-group">
+        <div class="brand-badge steam-badge">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15.7l-2.4-1.02c-.89-.38-1.5-1.25-1.5-2.22 0-1.35 1.1-2.45 2.45-2.45.64 0 1.22.25 1.66.65l3.22-1.38C13.56 8.52 14.2 8 15 8c1.66 0 3 1.34 3 3s-1.34 3-3 3c-.47 0-.91-.11-1.3-.31l-3.32 1.41c.08.3.12.61.12.93 0 1.22-.61 2.3-1.54 2.94L12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+          <span>Steam</span>
+        </div>
+        <span class="brand-divider">+</span>
+        <div class="brand-badge discord-badge">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+          <span>Discord</span>
+        </div>
+      </div>
+      <h1 class="title">Steam Family Notifier Setup</h1>
+      <p class="subtitle">Configure your family sharing library tracker in minutes. Get notified whenever members add new games!</p>
+      
+      <div id="existing-config-badge" class="existing-badge hidden">
+        <span class="badge-dot"></span>
+        <span>Loaded existing configuration from <code>.env</code></span>
+      </div>
+    </header>
+
+    <!-- Stepper Navigation -->
+    <nav class="stepper" aria-label="Setup steps">
+      <div class="step-item active" data-step="1">
+        <div class="step-circle">1</div>
+        <div class="step-label">Credentials</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-item" data-step="2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Family Members</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-item" data-step="3">
+        <div class="step-circle">3</div>
+        <div class="step-label">Preferences</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-item" data-step="4">
+        <div class="step-circle">4</div>
+        <div class="step-label">Deploy & Finish</div>
+      </div>
+    </nav>
+
+    <!-- Main Card View -->
+    <main class="card main-card">
+
+      <!-- STEP 1: CREDENTIALS -->
+      <section id="step-1" class="step-section active">
+        <div class="section-header">
+          <h2>API Credentials & Webhooks</h2>
+          <p>Connect your Steam account to inspect libraries and specify your Discord channel for announcements.</p>
+        </div>
+
+        <div class="form-grid">
+          <!-- Steam API Key -->
+          <div class="form-group">
+            <div class="label-row">
+              <label for="steam-api-key">Steam Web API Key</label>
+              <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener" class="link-helper">
+                Get API Key ↗
+              </a>
+            </div>
+            <p class="field-desc">Used to query games and verify profile information without storing any personal passwords.</p>
+            <div class="input-action-group">
+              <input type="password" id="steam-api-key" placeholder="Paste your 32-character Steam API key" autocomplete="off" spellcheck="false">
+              <button type="button" id="btn-toggle-key-visibility" class="btn-icon" title="Toggle visibility">👁️</button>
+              <button type="button" id="btn-verify-steam-key" class="btn btn-secondary">
+                <span class="btn-text">Test Key</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </div>
+            <div id="steam-key-feedback" class="status-feedback"></div>
+          </div>
+
+          <!-- Discord Webhook URL -->
+          <div class="form-group">
+            <div class="label-row">
+              <label for="discord-webhook-url">Discord Webhook URL</label>
+              <span class="tag">Discord Channel</span>
+            </div>
+            <p class="field-desc">In Discord: Channel Settings &gt; Integrations &gt; Webhooks &gt; New Webhook &gt; Copy Webhook URL.</p>
+            <div class="input-action-group">
+              <input type="url" id="discord-webhook-url" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" spellcheck="false">
+              <button type="button" id="btn-test-discord" class="btn btn-secondary">
+                <span class="btn-text">Send Test Ping</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </div>
+            <div id="discord-webhook-feedback" class="status-feedback"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2: FAMILY MEMBERS -->
+      <section id="step-2" class="step-section">
+        <div class="section-header">
+          <h2>Family Members</h2>
+          <p>Add the Steam accounts in your Steam Family. You can enter a 17-digit SteamID64, profile link, or custom URL.</p>
+        </div>
+
+        <!-- Member Add Bar -->
+        <div class="member-add-box">
+          <div class="member-add-row">
+            <div class="input-wrapper">
+              <input type="text" id="member-input" placeholder="e.g. 76561198012345678, https://steamcommunity.com/id/username, or vanity name" autocomplete="off">
+            </div>
+            <button type="button" id="btn-add-member" class="btn btn-primary">
+              <span class="btn-text">+ Add Member</span>
+              <span class="spinner hidden"></span>
+            </button>
+          </div>
+          <div id="member-add-feedback" class="status-feedback"></div>
+        </div>
+
+        <!-- Members Card List -->
+        <div class="members-container">
+          <div class="members-header-bar">
+            <span class="members-count">Configured Members (<span id="member-count-num">0</span>)</span>
+            <span class="helper-text">Steam libraries must have <b>Game details: Public</b> to track new games.</span>
+          </div>
+
+          <div id="members-list" class="members-grid">
+            <!-- Dynamic member cards populated by JS -->
+          </div>
+
+          <div id="members-empty" class="empty-state">
+            <div class="empty-icon">🎮</div>
+            <h3>No members added yet</h3>
+            <p>Paste a Steam profile link, vanity name, or SteamID64 above to automatically retrieve profile info and add them to your family tracker.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3: PREFERENCES -->
+      <section id="step-3" class="step-section">
+        <div class="section-header">
+          <h2>Notification & Pricing Preferences</h2>
+          <p>Customize the Discord announcement language and Steam store regional currency.</p>
+        </div>
+
+        <div class="form-grid">
+          <!-- Language Selector -->
+          <div class="form-group">
+            <label>Message Language</label>
+            <p class="field-desc">Choose what language Discord announcement messages are rendered in.</p>
+            <div class="radio-card-grid">
+              <label class="radio-card">
+                <input type="radio" name="message-language" value="EN" checked>
+                <div class="radio-card-content">
+                  <span class="radio-flag">🇺🇸</span>
+                  <div class="radio-meta">
+                    <span class="radio-title">English</span>
+                    <span class="radio-subtitle">"Alice purchased..."</span>
+                  </div>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="message-language" value="PT">
+                <div class="radio-card-content">
+                  <span class="radio-flag">🇧🇷</span>
+                  <div class="radio-meta">
+                    <span class="radio-title">Português</span>
+                    <span class="radio-subtitle">"Alice comprou..."</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Store Country -->
+          <div class="form-group">
+            <label for="store-country-code">Steam Store Country</label>
+            <p class="field-desc">Regional Steam store used to retrieve accurate local pricing and currency.</p>
+            <div class="select-group">
+              <select id="store-country-select">
+                <option value="br" selected>🇧🇷 Brazil (BRL - R$)</option>
+                <option value="us">🇺🇸 United States (USD - $)</option>
+                <option value="gb">🇬🇧 United Kingdom (GBP - £)</option>
+                <option value="de">🇩🇪 Germany / Europe (EUR - €)</option>
+                <option value="ca">🇨🇦 Canada (CAD - $)</option>
+                <option value="au">🇦🇺 Australia (AUD - $)</option>
+                <option value="jp">🇯🇵 Japan (JPY - ¥)</option>
+                <option value="custom">🌐 Other 2-letter country code...</option>
+              </select>
+              <input type="text" id="custom-country-code" class="hidden" placeholder="e.g. mx, ar, fr" maxlength="2">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 4: FINISH & DEPLOY -->
+      <section id="step-4" class="step-section">
+        <div class="section-header">
+          <h2>Finish & Deploy</h2>
+          <p>Save your configuration, initialize your baseline, or prepare your automated GitHub Actions deployment.</p>
+        </div>
+
+        <!-- Summary overview card -->
+        <div class="summary-card">
+          <div class="summary-item">
+            <span class="summary-label">Members Tracked:</span>
+            <span id="summary-member-count" class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Language:</span>
+            <span id="summary-language" class="summary-value">EN</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Store Country:</span>
+            <span id="summary-country" class="summary-value">br</span>
+          </div>
+        </div>
+
+        <!-- Save Section -->
+        <div class="deploy-action-box">
+          <div class="box-header">
+            <h3>💾 1. Save Local Configuration</h3>
+            <p>Saves your settings to <code>.env</code> and <code>members.json</code> in this repository.</p>
+          </div>
+          <button type="button" id="btn-save-config" class="btn btn-success btn-lg">
+            <span class="btn-text">Save Configuration (.env &amp; members.json)</span>
+            <span class="spinner hidden"></span>
+          </button>
+          <div id="save-feedback" class="status-feedback"></div>
+        </div>
+
+        <!-- Deployment Tabs: Local Baseline vs GitHub Actions -->
+        <div class="deploy-tabs">
+          <div class="tab-nav">
+            <button type="button" class="tab-btn active" data-tab="local-tab">Option A: Run Locally / Baseline</button>
+            <button type="button" class="tab-btn" data-tab="github-tab">Option B: Deploy to GitHub Actions</button>
+          </div>
+
+          <!-- Tab A: Local Baseline -->
+          <div id="local-tab" class="tab-pane active">
+            <div class="tab-intro">
+              <p>Before leaving the notifier running, you must run the <b>initial baseline check</b>. This captures everyone's existing libraries into <code>state.json</code> so existing games don't trigger hundreds of old notifications.</p>
+            </div>
+            <button type="button" id="btn-run-baseline" class="btn btn-primary">
+              <span class="btn-text">⚡ Run Baseline Check Now</span>
+              <span class="spinner hidden"></span>
+            </button>
+            <div id="baseline-feedback" class="status-feedback"></div>
+
+            <!-- Terminal Output Window -->
+            <div id="terminal-window" class="terminal-box hidden">
+              <div class="terminal-header">
+                <div class="terminal-dots">
+                  <span></span><span></span><span></span>
+                </div>
+                <span class="terminal-title">Baseline Execution Log</span>
+              </div>
+              <pre id="terminal-logs" class="terminal-body"></pre>
+            </div>
+          </div>
+
+          <!-- Tab B: GitHub Actions Onboarding -->
+          <div id="github-tab" class="tab-pane">
+            <div class="tab-intro">
+              <p>To have GitHub automatically check games every 15 minutes for free, set these Secrets in your GitHub Repository under <b>Settings &gt; Secrets and variables &gt; Actions</b>.</p>
+            </div>
+
+            <div class="secrets-action-bar">
+              <button type="button" id="btn-copy-gh-cli" class="btn btn-secondary">
+                📋 Copy GitHub CLI Script
+              </button>
+              <a href="https://github.com" target="_blank" rel="noopener" class="link-helper">
+                Open GitHub Repository ↗
+              </a>
+            </div>
+
+            <!-- Secrets Table -->
+            <div class="secrets-table">
+              <div class="secret-row">
+                <div class="secret-meta">
+                  <code>STEAM_API_KEY</code>
+                  <span class="secret-desc">Steam Web API Key</span>
+                </div>
+                <button type="button" class="btn-icon btn-copy-secret" data-secret-key="STEAM_API_KEY" title="Copy value">📋 Copy</button>
+              </div>
+              <div class="secret-row">
+                <div class="secret-meta">
+                  <code>DISCORD_WEBHOOK_URL</code>
+                  <span class="secret-desc">Discord Channel Webhook</span>
+                </div>
+                <button type="button" class="btn-icon btn-copy-secret" data-secret-key="DISCORD_WEBHOOK_URL" title="Copy value">📋 Copy</button>
+              </div>
+              <div class="secret-row">
+                <div class="secret-meta">
+                  <code>STEAM_MEMBERS</code>
+                  <span class="secret-desc">JSON map of SteamID64 to Names</span>
+                </div>
+                <button type="button" class="btn-icon btn-copy-secret" data-secret-key="STEAM_MEMBERS" title="Copy value">📋 Copy</button>
+              </div>
+              <div class="secret-row">
+                <div class="secret-meta">
+                  <code>MESSAGE_LANGUAGE</code>
+                  <span class="secret-desc">Notification language (EN / PT)</span>
+                </div>
+                <button type="button" class="btn-icon btn-copy-secret" data-secret-key="MESSAGE_LANGUAGE" title="Copy value">📋 Copy</button>
+              </div>
+              <div class="secret-row">
+                <div class="secret-meta">
+                  <code>STORE_COUNTRY_CODE</code>
+                  <span class="secret-desc">Steam Store country code (e.g. br)</span>
+                </div>
+                <button type="button" class="btn-icon btn-copy-secret" data-secret-key="STORE_COUNTRY_CODE" title="Copy value">📋 Copy</button>
+              </div>
+            </div>
+
+            <div class="info-callout">
+              <h4>⚠️ Required GitHub Setting:</h4>
+              <p>Ensure your repo has read &amp; write permissions enabled: Go to <b>Settings &gt; Actions &gt; General &gt; Workflow permissions</b> and select <b>"Read and write permissions"</b> so the bot can commit updated state.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finish / Shutdown Button -->
+        <div class="finish-bar">
+          <button type="button" id="btn-shutdown-server" class="btn btn-secondary">
+            ✓ Done! Close Setup Wizard
+          </button>
+        </div>
+      </section>
+
+      <!-- Stepper Controls Footer -->
+      <footer class="controls-footer">
+        <button type="button" id="btn-prev-step" class="btn btn-secondary" disabled>← Back</button>
+        <div class="step-indicator-text">Step <span id="current-step-num">1</span> of 4</div>
+        <button type="button" id="btn-next-step" class="btn btn-primary">Next →</button>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

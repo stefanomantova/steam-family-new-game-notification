@@ -1,283 +1,188 @@
 # 🎮 Steam Family Notifier
 
-Posts a message on Discord whenever someone in your Steam Family Sharing
-group adds a new game.
-
-Runs entirely in the cloud via **GitHub Actions** (no need to keep any
-computer on) and can also run locally on **Windows, macOS, or Linux**,
-using Node.js and TypeScript.
-
-No personal data (SteamIDs, API key, webhook) lives in the code —
-everything is configured through environment variables / secrets.
+Get a Discord message every time someone in your Steam Family Sharing group adds a new game — automatically, in the cloud, no coding needed.
 
 🇧🇷 Leia isso em português: [README.pt-BR.md](README.pt-BR.md)
 
 ---
 
-## TL;DR — Quick Setup
+## Part 1 — Setup Guide
 
-1. **Fork this repo** (or "Use this template")
-   → button at the top of this page
-
-2. **Get a Steam API key**
-   → https://steamcommunity.com/dev/apikey (any value works for "Domain Name")
-
-3. **Get each member's SteamID64**
-   → paste their profile URL into https://steamid.io/ (profiles must have a public game library)
-
-4. **Create a Discord webhook**
-   → Discord channel → Settings → Integrations → Webhooks → New Webhook → copy URL
-
-5. **Add these repository secrets** (Settings → Secrets and variables → Actions → New repository secret)
-
-   | Secret | Value |
-   |---|---|
-   | `STEAM_API_KEY` | key from step 2 |
-   | `DISCORD_WEBHOOK_URL` | URL from step 4 |
-   | `STEAM_MEMBERS` | JSON, e.g. `{"7656119...":"Alice","7656119...":"Bob"}` |
-   | `MESSAGE_LANGUAGE` | *(optional)* `EN` or `PT` — defaults to `EN` |
-   | `STORE_COUNTRY_CODE` | *(optional)* e.g. `br`, `us` — defaults to `br` |
-
-6. **Enable workflow write permissions**
-   → Settings → Actions → General → Workflow permissions → **Read and write permissions** → Save
-   *(required so the workflow can commit `state.json`/`stats.json` back)*
-
-7. **Test it**
-   → Actions → *Steam Family Notifier* → Run workflow. First run only saves a baseline (no messages sent).
-
-8. *(Optional)* **Set up the `/ranking` Discord command**
-   → follow [`discord-bot/README.md`](discord-bot/README.md) — needs a Discord Application (Public Key + Bot Token), a free Cloudflare account (API Token + Account ID), and 4 more repo secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `DISCORD_PUBLIC_KEY`, `RANKING_BOT_GH_TOKEN`
-   → also edit `discord-bot/wrangler.toml` → `GITHUB_REPO` to your `owner/repo`
-   → enable the Worker's `workers.dev` URL, register the `/ranking` command via `register-command.sh`, and set it as the app's Interactions Endpoint URL
-
-Done — the bot checks periodically (every 15 minutes by default) and posts to Discord when someone in the group gets a new game. Full details for every step below.
+### What you'll need
+- A [GitHub account](https://github.com) (free)
+- A Steam account with an API key (free, takes 1 minute)
+- A Discord channel where you want the alerts
 
 ---
 
-## Option A — Running on GitHub Actions (recommended, "plug and play")
+### Step 1 — Get your own copy of this project
 
-1. Click **"Use this template"** at the top of the repository (or fork
-   it) to create your own copy.
-
-2. Generate a **Steam API key** (free, takes a minute):
-   https://steamcommunity.com/dev/apikey
-
-3. Get the **SteamID64** of each person in the group. If you have each
-   person's profile link, a quick way is pasting it into https://steamid.io/.
-   *(Only works for profiles with a public game library.)*
-
-4. Create a **Discord webhook** in the channel where you want the alerts:
-   Channel Settings → Integrations → Webhooks → New Webhook → copy the URL.
-
-5. In your GitHub repository, go to
-   **Settings → Secrets and variables → Actions → New repository secret**
-   and create these secrets:
-
-   | Name                   | Value |
-   |-------------------------|-------|
-   | `STEAM_API_KEY`         | the key from step 2 |
-   | `DISCORD_WEBHOOK_URL`   | the URL from step 4 |
-   | `STEAM_MEMBERS`         | a JSON like `{"76561198000000001":"Alice","76561198000000002":"Bob"}` mapping each member's SteamID64 to a display name |
-   | `MESSAGE_LANGUAGE`      | *(optional)* `EN` or `PT` — defaults to `EN` if not set |
-   | `STORE_COUNTRY_CODE`    | *(optional)* two-letter country code for game prices, e.g. `us` — defaults to `br` |
-
-6. Done. The workflow at `.github/workflows/check-new-games.yml` already
-   runs on its own every 15 minutes. To test it without waiting, go to
-   **Actions → Steam Family Notifier → Run workflow**.
-
-On the first run the script only saves the current state (it doesn't
-notify anything, to avoid flooding the channel with games that already
-existed). From the second run on, any new game triggers an alert.
-
-### Adjusting the frequency
-
-To change it, edit the `cron` line in `.github/workflows/check-new-games.yml`
-(standard cron syntax, in UTC). GitHub Actions is free for this kind of
-use even on private repos, but note that scheduled ("cron") workflows on
-low-activity repos aren't guaranteed to run exactly on time — GitHub can
-delay or skip runs during high load, especially at popular minutes like
-`:00`/`:15`/`:30`/`:45`. If you need reliable timing, consider triggering
-the workflow externally via `workflow_dispatch` (e.g. a free service like
-cron-job.org calling the GitHub API) instead of relying on `schedule`.
+Click **"Use this template"** at the top of this page, then **"Create a new repository"**. Give it any name you like. This creates your own private copy where your settings live.
 
 ---
 
-## Option B — Running locally (Windows, macOS, or Linux)
+### Step 2 — Get a Steam API Key
 
-Useful for testing before pushing to GitHub, or if you'd rather run it on
-your own machine/server instead of GitHub Actions.
+Go to https://steamcommunity.com/dev/apikey. Log in with your Steam account and register any domain name (it doesn't matter what you put there). Copy the key shown on the page.
+
+---
+
+### Step 3 — Create a Discord Webhook
+
+In Discord, open the channel where you want the notifications. Click **Edit Channel → Integrations → Webhooks → New Webhook**. Give it a name (e.g. "Game Notifier") and copy the URL.
+
+---
+
+### Step 4 — Use the Setup Wizard (Recommended)
+
+The easiest way to configure everything is through the browser-based wizard:
 
 ```bash
-# 1. Clone the repository and enter the folder
-git clone <your-fork-url>
-cd steam-family-notifier
-
-# 2. Install dependencies (Node.js 20 or newer)
-npm ci
-
-# 4. Configure your variables
-cp .env.example .env
-# edit .env with your STEAM_API_KEY, DISCORD_WEBHOOK_URL, STEAM_MEMBERS, etc.
-
-# 4. Build and run it
-npm run build
-npm run check-new-games
+npm install && npm run setup:ui
 ```
 
-To run it periodically on your own machine, schedule it with **Task
-Scheduler** (Windows), **cron** (Linux/macOS), or **launchd** (macOS).
+Then open **http://localhost:3000** in your browser. The wizard walks you through:
+
+1. **Credentials** — Paste your Steam API key and Discord Webhook URL. Test the connection live.
+2. **Family Members** — Add each group member by pasting their Steam profile URL. The wizard fetches their avatar and name automatically.
+3. **Preferences** — Pick your notification language (English or Portuguese) and Steam store region for game prices.
+4. **Ranking Bot** *(Optional)* — Enable the `/ranking` Discord command powered by a free Cloudflare Worker.
+5. **Deploy & Finish** — Save everything and copy the exact GitHub secrets needed, all pre-filled and ready to paste.
+
+> **No Node.js installed?** You can also set everything up manually — see the manual setup below.
 
 ---
 
-## Project structure
+### Step 4 (Alternative) — Manual Setup
 
-```
-src/                      -> TypeScript domain, application, ports, adapters, and CLIs
-package.json              -> Node.js commands and dependencies
-package-lock.json         -> reproducible dependency versions
-.env.example              -> template for local environment variables
-members.example.json      -> template for the member list format (alternative to STEAM_MEMBERS)
-state.json                 -> "database" with the last checked snapshot (committed)
-stats.json                  -> gamification totals per member, spent / purchased (committed)
-.github/workflows/
-  check-new-games.yml        -> the scheduled notifier
-   backfill-purchase.yml      -> manual "Backfill Purchase Stats" workflow
-discord-bot/                -> optional real-time /ranking Discord command (Cloudflare Worker)
-README.md / README.pt-BR.md -> English / Portuguese docs
-```
+If you'd prefer not to run the wizard, you can add the secrets directly in GitHub:
 
-## How it works under the hood
+Go to your repository → **Settings → Secrets and variables → Actions → New repository secret** and add:
 
-The script calls the Steam Web API's `GetOwnedGames` endpoint for each
-configured SteamID. That endpoint returns the list of games available on
-the account (including games received via Family Sharing), as long as the
-profile's game library is public. On each run, the script compares each
-member's current list against the snapshot saved in `state.json`.
+| Secret | What to put |
+|---|---|
+| `STEAM_API_KEY` | The key from Step 2 |
+| `DISCORD_WEBHOOK_URL` | The webhook URL from Step 3 |
+| `STEAM_MEMBERS` | `{"SteamID64":"Display Name", ...}` — look up SteamID64s at [steamid.io](https://steamid.io) |
+| `MESSAGE_LANGUAGE` | `EN` or `PT` *(optional, defaults to EN)* |
+| `STORE_COUNTRY_CODE` | e.g. `us`, `br` *(optional, defaults to br)* |
 
-The API doesn't directly say whether a new game was purchased or received
-through Family Sharing, so the script uses a heuristic: when a new game
-shows up on someone's account, it checks whether **another** member of the
-group already had that game before this run.
+Then go to **Settings → Actions → General → Workflow permissions** and enable **Read and write permissions**.
 
-- If yes → assumed shared, message:
-  *"🔗 A new game is available on Family Sharing! **X**, shared by **Z**."*
-- If nobody else had it and only one member gained access → assumed a
-  purchase: *"🎮 **Y** bought a new game: **X**."*
-- If nobody had it and several people gained access at once (can't tell
-  who bought it) → generic message: *"🎮 A new game appeared in the
-  group: **X**."*
+---
 
-If the same game shows up for several members in the same run, the script
-sends a **single** message for that game (not one per recipient), since
-what matters is the game and who made it available.
+### Step 5 — Run it for the first time
 
-Free games are detected and skipped entirely — no Discord message, no
-ranking stats (see the Gamification section below for details).
+Go to **Actions → Steam Family Notifier → Run workflow**.
 
-The snapshot is updated and committed back to the repository on every run.
+> The first run takes a snapshot of everyone's libraries. No messages are sent. From the next run on, any newly added game will trigger a notification.
 
-## Message language
+The bot checks for new games every 15 minutes automatically.
 
-Set the `MESSAGE_LANGUAGE` environment variable / secret to `PT` for
-Portuguese messages, or `EN` (or leave it unset) for English. Any other
-value falls back to English.
+---
 
-## Gamification: spending & purchase rankings
+### (Optional) Enable the `/ranking` Discord Command
 
-Every time an **unambiguous new purchase** is detected (a single member
-gains access to a game nobody else in the group had before), the script
-looks up that game's price and adds it to that member's running totals in
-`stats.json` — total spent, and total games bought.
+Want members to be able to type `/ranking` in Discord and see who spent the most and bought the most games? This is a free optional add-on.
 
-### Free games are ignored completely
+The setup wizard (Step 4 above) has a dedicated **Ranking Bot** step that guides you through the whole process — including registering the Discord slash command with one click and verifying your Cloudflare Worker is running. You'll need:
 
-If the Steam Store marks the title as free-to-play (`is_free`), it's
-skipped entirely: no Discord message, no stats update. This is checked
-directly against Steam's own flag — a missing price is *not* treated as
-"free" (see next section for why that distinction matters).
+- A free Discord Application (created at [discord.com/developers](https://discord.com/developers))
+- A free [Cloudflare account](https://cloudflare.com)
 
-### Price lookup order (for paid games)
+Everything else is handled through the wizard or GitHub Actions automatically.
 
-1. The game's own standalone price (`price_overview`) — the normal case.
-2. If the game has no standalone listing (only sold as part of a
-   bundle/package, no individual SKU) — the cheapest bundle/package price
-   that grants it, since that's what the buyer actually paid. The Discord
-   message gets a small note: *"(price counted from the bundle/package it
-   came in)"*.
-3. A best-effort lookup by **searching the Steam Store by name** and using
-   the closest match's price. This covers some library-only "wrapper"
-   appids with no storefront page. Same bundle note applies. This relies on
-   Steam's informal store search endpoint, so it's less precise than a
-   direct appid lookup.
-4. SteamDB's displayed current price for the app, as a read-only fallback
-   when the Steam Store cannot provide one. SteamDB never determines whether
-   a game is free: only Steam Store's `is_free` flag does that.
-5. Bundle candidates listed by SteamDB, only after the normal app/package
-   and Steam Store search paths fail. The script first asks the Steam Store
-   for each bundle's price, then uses that bundle's SteamDB price only when
-   necessary. The game keeps its original appid in the notification and
-   statistics.
-6. If none of the above finds a price — the purchase is still announced,
-   but flagged as **not counted in the ranking**, and the message tells
-   whoever's running the group which command to run to fix it manually
-   (see below).
+---
 
-Other cases that are intentionally **not** counted in the ranking:
-- Games received through Family Sharing (already counted for the
-  original buyer).
-- A game appearing for several members at once with no prior owner in
-  the group (can't tell who actually bought it).
+## Part 2 — Technical Reference
 
-The lookup region is controlled by the optional `STORE_COUNTRY_CODE`
-variable/secret (defaults to `"br"`, e.g. `"us"` for US dollar pricing).
+### How it works
 
-### Fixing an uncounted purchase: the backfill CLI
+The script calls Steam's `GetOwnedGames` API for each member on every run and compares it against the last snapshot (`state.json`, committed to the repo). New app IDs are the "new games."
 
-When a purchase can't be priced automatically, the Discord message says
-so and includes the exact `steamid` and `appid` needed to fix it. Two ways
-to run the fix:
+**Shared vs. purchased heuristic**: Steam doesn't expose whether a game was purchased or received via Family Sharing. The script infers intent:
+- If another group member already had the game before → *shared from them*
+- If only one member gained access and nobody else had it → *purchased*
+- If multiple members gained access simultaneously → *generic group message* (ambiguous)
 
-**Via GitHub Actions (no local install needed):** Actions → *Backfill
-Purchase Stats* → Run workflow → fill in `steamid` and `appid` (and
-optionally `game_name`, a manual `price`/`currency` override, and whether
-to `notify` Discord about the correction). It updates `stats.json` and
-commits it back automatically.
+**Free game detection**: The Steam Store's `is_free` flag is the only signal. A missing price is **not** treated as free — that distinction matters for the ranking stats.
+
+---
+
+### Price Lookup (for ranking stats)
+
+When a purchase is detected, the game's price is resolved in this order:
+
+1. Direct app `price_overview` from the Steam Store API
+2. Cheapest bundle/package that includes the app (for games with no individual SKU)
+3. Steam Store name-search fallback (covers library-only wrapper appids)
+4. SteamDB displayed price (read-only fallback)
+5. SteamDB bundle candidates
+6. If nothing works → purchase is announced but **not counted in ranking stats**, and the Discord message includes the exact command to fix it manually
+
+Region is controlled by `STORE_COUNTRY_CODE` (defaults to `br`).
+
+---
+
+### Fixing a missing stat entry
+
+When a price can't be resolved automatically, run the backfill:
+
+**Via GitHub Actions** (no install needed): Actions → *Backfill Purchase Stats* → Run workflow, fill in `steamid` and `appid`.
 
 **Locally:**
 ```bash
 npm run build
-npm run backfill-purchase -- --steamid 76561198000000001 --appid 4659620
-# add --notify to also post a Discord message about the correction
-# add --price 59.90 --currency BRL to override the price manually,
-# for the rare case where even the store-search fallback finds nothing
+npm run backfill-purchase -- --steamid 76561198000000001 --appid 123456
+# --notify to post a Discord correction message
+# --price 29.99 --currency USD to override the price manually
 ```
 
-This only touches `stats.json` — the game is presumably already tracked
-in `state.json`, so a normal run won't (and shouldn't) treat it as "new"
-again.
+---
 
-### Live `/ranking` command
+### Architecture Overview
 
-To turn these totals into a live `/ranking` command in Discord, see
-[`discord-bot/`](discord-bot/README.md) — a small, free Cloudflare
-Worker add-on. Members tied on the same value/count are grouped on the
-same line in the ranking (e.g. `🥇 Alice & Bob — R$ 199.90`).
+| Layer | Technology |
+|---|---|
+| Scheduled notifier | GitHub Actions (cron, every 15 min) |
+| State persistence | `state.json` + `stats.json` committed to the repo |
+| Setup wizard | Next.js 14 (runs locally only, not deployed) |
+| `/ranking` command | Cloudflare Worker (serverless, free tier) |
+| Steam data | Steam Web API (`GetOwnedGames`, `GetAppDetails`) |
+| Prices | Steam Store API → SteamDB fallback |
 
-## Limitations
+The domain logic lives in `src/application/`. Adapters for Steam, Discord, and the JSON file repositories are in `src/adapters/`. The GitHub Actions workflow calls the compiled CLI in `dist/cli/`.
 
-- Depends on each member's Steam profile having a public game library.
-- There's no native Steam webhook for this event — the script works by
-  periodic polling, so it may take up to one run's interval to detect a
-  new game.
-- The "shared by Z" attribution is a heuristic based on who in the group
-  already had the game, not official Steam data — in rare cases it can
-  get the source wrong (e.g. if two members gain access to the same game
-  in the same run).
-- Price is the store's price at detection time, not necessarily what the
-  buyer actually paid (sales, currency changes, etc. aren't tracked).
-- The store-search price fallback (step 3 above) relies on an informal,
-  undocumented Steam endpoint — reliable in practice, but not guaranteed.
+---
+
+### Project Structure
+
+```
+check_new_games.py          → legacy Python notifier (still works)
+src/                        → TypeScript rewrite (application, adapters, CLIs)
+web/                        → Next.js setup wizard (local only)
+discord-bot/                → optional Cloudflare Worker for /ranking
+state.json                  → committed library snapshot (the "database")
+stats.json                  → committed purchase totals for /ranking
+.github/workflows/
+  check-new-games.yml       → main scheduled workflow
+  deploy-ranking-bot.yml    → deploys the Cloudflare Worker on push
+  backfill-purchase.yml     → manual stat repair workflow
+```
+
+---
+
+### Limitations
+
+- Requires each member's Steam profile game library to be **public**.
+- Polling-based: up to one interval (15 min) of delay before a game is detected.
+- Shared-by attribution is a heuristic — can misattribute in edge cases where two members gain the same game in the same run.
+- Prices reflect the Steam Store at detection time, not what the buyer actually paid (sales, regional pricing changes, etc. aren't tracked).
+
+---
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
