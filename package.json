@@ -16,7 +16,8 @@
     "setup:ui": "npm --prefix web install && npm --prefix web run dev",
     "package:windows": "npm run build && node scripts/package-windows.mjs",
     "check-new-games": "node dist/cli/check-new-games.js",
-    "backfill-purchase": "node dist/cli/backfill-purchase.js"
+    "backfill-purchase": "node dist/cli/backfill-purchase.js",
+    "setup:github": "npm run build && node dist/cli/setup-github.js"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -24,6 +25,7 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "tweetnacl": "^1.0.3"
   }
 }

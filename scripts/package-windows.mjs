@@ -12,6 +12,7 @@ await mkdir(appRoot, { recursive: true });
 await cp(resolve(projectRoot, "dist"), join(appRoot, "dist"), { recursive: true });
 await cp(resolve(projectRoot, "src", "setup-server", "ui"), join(appRoot, "src", "setup-server", "ui"), { recursive: true });
 await cp(resolve(projectRoot, "node_modules", "dotenv"), join(appRoot, "node_modules", "dotenv"), { recursive: true });
+await cp(resolve(projectRoot, "node_modules", "tweetnacl"), join(appRoot, "node_modules", "tweetnacl"), { recursive: true });
 await cp(process.execPath, join(appRoot, "node.exe"));
 await writeFile(join(appRoot, "package.json"), JSON.stringify({ type: "module" }, null, 2) + "\n", "utf8");
 
@@ -19,6 +20,13 @@ await writeFile(join(appRoot, "run-setup.cmd"), [
   "@echo off",
   "cd /d \"%~dp0\"",
   "node.exe dist\\cli\\setup.js",
+  "",
+].join("\r\n"), "utf8");
+
+await writeFile(join(appRoot, "run-github-setup.cmd"), [
+  "@echo off",
+  "cd /d \"%~dp0\"",
+  "node.exe dist\\cli\\setup-github.js %*",
   "",
 ].join("\r\n"), "utf8");
 

@@ -59,6 +59,16 @@ Execute `run-setup.cmd` para abrir o assistente local e use a opção **Dry Run*
 
 O pacote portátil é um auxiliar local; ele não substitui o repositório privado do GitHub usado pelo agendamento a cada 15 minutos e pela persistência do estado. Uma versão futura pode transformar o mesmo ponto de entrada em um executável único, mas o pacote portátil é o primeiro formato de distribuição de menor risco.
 
+### Configuração automática no GitHub
+
+O pacote portátil pode criar e configurar um repositório privado a partir deste template, habilitar permissões de escrita do Actions e enviar os secrets criptografados:
+
+```text
+run-github-setup.cmd --repo SEU_USUARIO_GITHUB/steam-family-notifier --dry-run
+```
+
+O dry run mostra todas as operações planejadas e não faz nenhuma alteração no GitHub. Para aplicar, defina `GITHUB_TOKEN` no ambiente do processo e execute o mesmo comando sem `--dry-run`. O token precisa ter permissão para criar repositórios a partir de templates e gerenciar secrets do Actions.
+
 ---
 
 ### Passo 4 (Alternativo) — Configuração Manual

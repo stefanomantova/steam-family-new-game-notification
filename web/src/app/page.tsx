@@ -28,6 +28,8 @@ export default function Home() {
   const [discordPublicKey, setDiscordPublicKey] = useState("");
   const [discordGuildId, setDiscordGuildId] = useState("");
   const [githubRepo, setGithubRepo] = useState("");
+  const [githubTargetRepo, setGithubTargetRepo] = useState("");
+  const [githubToken, setGithubToken] = useState("");
   const [cloudflareAccountId, setCloudflareAccountId] = useState("");
   const [cloudflareApiToken, setCloudflareApiToken] = useState("");
   const [rankingBotGhToken, setRankingBotGhToken] = useState("");
@@ -262,7 +264,12 @@ export default function Home() {
             rankingBotGhToken={rankingBotGhToken}
             workerUrl={workerUrl}
             githubRepo={githubRepo}
+            onChangeGithubRepo={setGithubRepo}
+            githubTargetRepo={githubTargetRepo}
+            onChangeGithubTargetRepo={setGithubTargetRepo}
             onToast={addToast}
+            githubToken={githubToken}
+            onChangeGithubToken={setGithubToken}
             managementMode={managementMode}
             language={uiLanguage}
           />

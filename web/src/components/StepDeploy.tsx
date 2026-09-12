@@ -17,6 +17,11 @@ interface StepDeployProps {
   rankingBotGhToken?: string;
   workerUrl?: string;
   githubRepo?: string;
+  onChangeGithubRepo?: (value: string) => void;
+  githubTargetRepo?: string;
+  onChangeGithubTargetRepo?: (value: string) => void;
+  githubToken?: string;
+  onChangeGithubToken?: (value: string) => void;
   onToast: (msg: string) => void;
   managementMode?: boolean;
   language?: "EN" | "PT";
@@ -36,6 +41,11 @@ export function StepDeploy({
   rankingBotGhToken = "",
   workerUrl = "",
   githubRepo = "",
+  onChangeGithubRepo = () => {},
+  githubTargetRepo = "",
+  onChangeGithubTargetRepo = () => {},
+  githubToken = "",
+  onChangeGithubToken = () => {},
   onToast,
   managementMode = false,
   language = "EN",
@@ -51,6 +61,8 @@ export function StepDeploy({
 
   const [runningBaseline, setRunningBaseline] = useState(false);
   const [baselineLogs, setBaselineLogs] = useState<string[]>([]);
+  const [githubRunning, setGithubRunning] = useState(false);
+  const [githubFeedback, setGithubFeedback] = useState<string | null>(null);
 
   const memberMap: Record<string, string> = {};
   for (const [id, m] of Object.entries(members)) {
@@ -141,6 +153,37 @@ export function StepDeploy({
       setBaselineLogs((prev) => [...prev, `❌ Error: ${err instanceof Error ? err.message : "Failed to run baseline"}`]);
     } finally {
       setRunningBaseline(false);
+    }
+  };
+
+  const handleGitHubSetup = async () => {
+    setGithubRunning(true);
+    setGithubFeedback(null);
+    try {
+      const res = await fetch("/api/github", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          githubToken,
+          targetRepo: githubTargetRepo,
+          templateRepo: "stefanomantova/steam-family-new-game-notification",
+          steamApiKey,
+          discordWebhookUrl,
+          members: memberMap,
+          messageLanguage,
+          storeCountryCode,
+          dryRun: isDryRun,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "GitHub setup failed.");
+      setGithubFeedback(isDryRun
+        ? `🧪 Dry run complete. Planned actions: ${data.plan.actions.join("; ")}`
+        : "✓ GitHub repository and Actions secrets configured successfully.");
+    } catch (error) {
+      setGithubFeedback(`❌ ${error instanceof Error ? error.message : "GitHub setup failed."}`);
+    } finally {
+      setGithubRunning(false);
     }
   };
 
@@ -522,6 +565,26 @@ export function StepDeploy({
             </div>
           </div>
         )}
+      </div>
+
+      <div style={{ marginTop: "28px", background: "rgba(23, 33, 46, 0.6)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "20px" }}>
+        <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "8px" }}>☁️ 3. Automate GitHub setup</h3>
+        <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "14px" }}>
+          Create a private repository from this template, enable state-writing permissions, and upload encrypted Actions secrets. Dry Run is recommended before applying.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+          <label className="field-label">Target repository (owner/name)
+            <input className="input" value={githubTargetRepo} placeholder="your-user/steam-family-notifier" onChange={(e) => onChangeGithubTargetRepo(e.target.value)} />
+          </label>
+          <label className="field-label">GitHub token
+            <input className="input" type="password" value={githubToken} placeholder="Only needed when applying" onChange={(e) => onChangeGithubToken(e.target.value)} />
+          </label>
+        </div>
+        <button type="button" className={`btn ${isDryRun ? "btn-secondary" : "btn-success"}`} onClick={handleGitHubSetup} disabled={githubRunning || !githubTargetRepo.trim()}>
+          {githubRunning && <span className="spinner" />}
+          {isDryRun ? "🧪 Preview GitHub Setup" : "Apply GitHub Setup"}
+        </button>
+        {githubFeedback && <div className="feedback-box" style={{ marginTop: "14px" }}>{githubFeedback}</div>}
       </div>
     </section>
   );

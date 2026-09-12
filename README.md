@@ -59,6 +59,16 @@ Run `run-setup.cmd` to open the local setup wizard, then use its **Dry Run** opt
 
 The portable package is a local helper; it does not replace the private GitHub repository used for 15-minute scheduling and state persistence. A future release can wrap the same entry point as a single-file executable, but the portable package is intentionally the first low-risk distribution format.
 
+### Automated GitHub setup
+
+The portable package can create and configure a private repository from this template, set workflow write permissions, and upload encrypted Actions secrets:
+
+```text
+run-github-setup.cmd --repo YOUR_GITHUB_USER/steam-family-notifier --dry-run
+```
+
+The dry run prints the exact planned operations and performs no GitHub writes. To apply them, set `GITHUB_TOKEN` in the process environment and run the same command without `--dry-run`. The token needs permission to create repositories from templates and manage Actions secrets.
+
 ---
 
 ### Step 4 (Alternative) — Manual Setup
@@ -192,4 +202,3 @@ stats.json                  → committed purchase totals for /ranking
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
