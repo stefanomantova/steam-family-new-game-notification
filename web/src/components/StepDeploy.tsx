@@ -19,6 +19,7 @@ interface StepDeployProps {
   githubRepo?: string;
   onToast: (msg: string) => void;
   managementMode?: boolean;
+  language?: "EN" | "PT";
 }
 
 export function StepDeploy({
@@ -37,7 +38,9 @@ export function StepDeploy({
   githubRepo = "",
   onToast,
   managementMode = false,
+  language = "EN",
 }: StepDeployProps) {
+  const pt = language === "PT";
   const [activeTab, setActiveTab] = useState<"local" | "github">("local");
   const [isDryRun, setIsDryRun] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -166,8 +169,8 @@ export function StepDeploy({
   return (
     <section>
       <div className="step-title-area">
-        <h2>Save &amp; Deploy</h2>
-        <p>Save your configuration to this project and deploy to GitHub Actions or run locally.</p>
+        <h2>{pt ? "Salvar e implantar" : "Save & Deploy"}</h2>
+        <p>{pt ? "Salve sua configuração neste projeto e use o GitHub Actions ou execute localmente." : "Save your configuration to this project and deploy to GitHub Actions or run locally."}</p>
       </div>
 
       {/* Summary Stat Bar */}

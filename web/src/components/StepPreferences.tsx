@@ -7,6 +7,7 @@ interface StepPreferencesProps {
   onChangeMessageLanguage: (lang: "EN" | "PT") => void;
   storeCountryCode: string;
   onChangeStoreCountryCode: (code: string) => void;
+  language?: "EN" | "PT";
 }
 
 const COMMON_COUNTRIES = [
@@ -25,7 +26,9 @@ export function StepPreferences({
   onChangeMessageLanguage,
   storeCountryCode,
   onChangeStoreCountryCode,
+  language = "EN",
 }: StepPreferencesProps) {
+  const pt = language === "PT";
   const isPreset = COMMON_COUNTRIES.some((c) => c.code === storeCountryCode);
   const [selectVal, setSelectVal] = useState(isPreset ? storeCountryCode : "custom");
   const [customVal, setCustomVal] = useState(isPreset ? "" : storeCountryCode);
@@ -48,8 +51,8 @@ export function StepPreferences({
   return (
     <section>
       <div className="step-title-area">
-        <h2>Notification & Store Preferences</h2>
-        <p>Customize the announcement language and regional Steam store used for pricing calculation.</p>
+        <h2>{pt ? "Preferências de notificação e loja" : "Notification & Store Preferences"}</h2>
+        <p>{pt ? "Personalize o idioma dos avisos e a loja Steam regional usada para calcular preços." : "Customize the announcement language and regional Steam store used for pricing calculation."}</p>
       </div>
 
       {/* Language Selector */}

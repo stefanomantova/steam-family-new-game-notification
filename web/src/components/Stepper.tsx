@@ -5,20 +5,20 @@ import React from "react";
 interface StepperProps {
   currentStep: number;
   onSelectStep: (step: number) => void;
+  language?: "EN" | "PT";
 }
 
-const steps = [
-  { step: 1, name: "Credentials" },
-  { step: 2, name: "Family Members" },
-  { step: 3, name: "Preferences" },
-  { step: 4, name: "Ranking Bot" },
-  { step: 5, name: "Deploy & Finish" },
-];
+const steps = {
+  EN: ["Credentials", "Family Members", "Preferences", "Ranking Bot", "Deploy & Finish"],
+  PT: ["Credenciais", "Membros da família", "Preferências", "Bot de ranking", "Implantar e concluir"],
+};
 
-export function Stepper({ currentStep, onSelectStep }: StepperProps) {
+export function Stepper({ currentStep, onSelectStep, language = "EN" }: StepperProps) {
+  const labels = steps[language];
   return (
     <nav className="stepper" aria-label="Setup steps">
-      {steps.map((s, index) => {
+      {labels.map((name, index) => {
+        const s = { step: index + 1, name };
         const isActive = currentStep === s.step;
         const isCompleted = currentStep > s.step;
         return (
@@ -30,7 +30,7 @@ export function Stepper({ currentStep, onSelectStep }: StepperProps) {
               <div className="step-circle">{isCompleted ? "✓" : s.step}</div>
               <span className="step-name">{s.name}</span>
             </div>
-            {index < steps.length - 1 && (
+            {index < labels.length - 1 && (
               <div className={`step-line ${currentStep > s.step ? "filled" : ""}`} />
             )}
           </React.Fragment>

@@ -18,6 +18,7 @@ interface StepMembersProps {
   onRemoveMember: (steamId: string) => void;
   onUpdateMemberName: (steamId: string, newName: string) => void;
   onToast: (msg: string) => void;
+  language?: "EN" | "PT";
 }
 
 export function StepMembers({
@@ -27,7 +28,9 @@ export function StepMembers({
   onRemoveMember,
   onUpdateMemberName,
   onToast,
+  language = "EN",
 }: StepMembersProps) {
+  const pt = language === "PT";
   const [inputVal, setInputVal] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "warning"; text: string } | null>(null);
@@ -114,12 +117,12 @@ export function StepMembers({
   return (
     <section>
       <div className="step-title-area">
-        <h2>Family Members</h2>
-        <p>Add everyone in your Steam Family. You can paste Steam profile links, custom vanity URLs, or 17-digit SteamIDs.</p>
+        <h2>{pt ? "Membros da família" : "Family Members"}</h2>
+        <p>{pt ? "Adicione todos da sua família Steam. Você pode colar links de perfil, URLs personalizadas ou SteamIDs de 17 dígitos." : "Add everyone in your Steam Family. You can paste Steam profile links, custom vanity URLs, or 17-digit SteamIDs."}</p>
       </div>
 
       <div className="form-group">
-        <label className="field-label">Add Family Member</label>
+        <label className="field-label">{pt ? "Adicionar membro da família" : "Add Family Member"}</label>
         <p className="field-desc">
           Paste any of: <code>https://steamcommunity.com/id/username</code>, <code>profiles/76561198...</code>, or custom vanity name.
         </p>
@@ -148,7 +151,7 @@ export function StepMembers({
             disabled={loading || !inputVal.trim()}
           >
             {loading && <span className="spinner" />}
-            <span>+ Add Member</span>
+            <span>{pt ? "+ Adicionar membro" : "+ Add Member"}</span>
           </button>
         </div>
 
@@ -163,7 +166,7 @@ export function StepMembers({
       <div style={{ marginTop: "32px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
           <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
-            Configured Members ({memberList.length})
+            {pt ? "Membros configurados" : "Configured Members"} ({memberList.length})
           </span>
           <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
             Tip: Steam library must be Public to track new games.

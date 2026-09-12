@@ -10,6 +10,7 @@ import { StepDeploy } from "@/components/StepDeploy";
 import { ToastContainer } from "@/components/Toast";
 
 export default function Home() {
+  const [uiLanguage, setUiLanguage] = useState<"EN" | "PT">("PT");
   const [view, setView] = useState<"dashboard" | "setup">("dashboard");
   const [managementMode, setManagementMode] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -44,6 +45,8 @@ export default function Home() {
 
   // Load existing configuration from root repo on mount
   useEffect(() => {
+    const savedLanguage = window.localStorage.getItem("steam-family-ui-language");
+    if (savedLanguage === "EN" || savedLanguage === "PT") setUiLanguage(savedLanguage);
     async function loadConfig() {
       try {
         const res = await fetch("/api/config");
@@ -140,15 +143,17 @@ export default function Home() {
     return <Dashboard
       configured={hasExistingConfig}
       memberCount={Object.keys(members).length}
-      steamApiKey={steamApiKey}
       members={members}
       onSetup={() => { setManagementMode(false); setCurrentStep(1); setView("setup"); }}
       onManage={() => { setManagementMode(true); setCurrentStep(2); setView("setup"); }}
+      language={uiLanguage}
+      onLanguageChange={(language) => { setUiLanguage(language); window.localStorage.setItem("steam-family-ui-language", language); }}
     />;
   }
 
   return (
     <div className="container">
+      <LanguageSelector language={uiLanguage} onChange={(language) => { setUiLanguage(language); window.localStorage.setItem("steam-family-ui-language", language); }} />
       {/* Top Header */}
       <header className="header">
         <div className="brand-badge-group">
@@ -168,7 +173,7 @@ export default function Home() {
         </div>
 
         <h1 className="title">Steam Family Notifier</h1>
-        <p className="subtitle">{managementMode ? "Manage your family members and repair purchase statistics." : "Set up Steam Family Notifier for your Discord server."}</p>
+        <p className="subtitle">{managementMode ? (uiLanguage === "PT" ? "Gerencie os membros da família e corrija as estatísticas de compras." : "Manage your family members and repair purchase statistics.") : (uiLanguage === "PT" ? "Configure o Steam Family Notifier para seu servidor Discord." : "Set up Steam Family Notifier for your Discord server.")}</p>
 
         {hasExistingConfig && (
           <div className="existing-config-alert">
@@ -179,7 +184,7 @@ export default function Home() {
       </header>
 
       {/* Stepper Navigation */}
-      <Stepper currentStep={currentStep} onSelectStep={(step) => setCurrentStep(step)} />
+      <Stepper currentStep={currentStep} onSelectStep={(step) => setCurrentStep(step)} language={uiLanguage} />
 
       {/* Main Form Content */}
       <main className="main-card">
@@ -190,6 +195,7 @@ export default function Home() {
             discordWebhookUrl={discordWebhookUrl}
             onChangeDiscordWebhookUrl={setDiscordWebhookUrl}
             onToast={addToast}
+            language={uiLanguage}
           />
         )}
 
@@ -201,6 +207,7 @@ export default function Home() {
             onRemoveMember={handleRemoveMember}
             onUpdateMemberName={handleUpdateMemberName}
             onToast={addToast}
+            language={uiLanguage}
           />
         )}
 
@@ -210,6 +217,7 @@ export default function Home() {
             onChangeMessageLanguage={setMessageLanguage}
             storeCountryCode={storeCountryCode}
             onChangeStoreCountryCode={setStoreCountryCode}
+            language={uiLanguage}
           />
         )}
 
@@ -256,6 +264,7 @@ export default function Home() {
             githubRepo={githubRepo}
             onToast={addToast}
             managementMode={managementMode}
+            language={uiLanguage}
           />
         )}
 
@@ -267,10 +276,10 @@ export default function Home() {
             onClick={handleBack}
             disabled={currentStep === 1}
           >
-            ← Back
+            {uiLanguage === "PT" ? "← Voltar" : "← Back"}
           </button>
 
-          <span className="step-counter">Step {currentStep} of 5</span>
+          <span className="step-counter">{uiLanguage === "PT" ? `Etapa ${currentStep} de 5` : `Step ${currentStep} of 5`}</span>
 
           {currentStep < 5 ? (
             <button
@@ -278,7 +287,7 @@ export default function Home() {
               className="btn btn-primary"
               onClick={handleNext}
             >
-              Next →
+              {uiLanguage === "PT" ? "Próxima →" : "Next →"}
             </button>
           ) : (
             <button
@@ -286,7 +295,7 @@ export default function Home() {
               className="btn btn-success"
               onClick={() => addToast("Setup complete! Your configuration is ready.")}
             >
-              ✓ All Set
+              {uiLanguage === "PT" ? "✓ Concluído" : "✓ All Set"}
             </button>
           )}
         </footer>
@@ -297,7 +306,11 @@ export default function Home() {
   );
 }
 
-function Dashboard({ configured, memberCount, steamApiKey, members, onSetup, onManage }: { configured: boolean; memberCount: number; steamApiKey: string; members: Record<string, MemberRecord>; onSetup: () => void; onManage: () => void }) {
+function LanguageSelector({ language, onChange }: { language: "EN" | "PT"; onChange: (language: "EN" | "PT") => void }) {
+  return <div className="language-selector"><label htmlFor="ui-language">Idioma</label><select id="ui-language" value={language} onChange={(event) => onChange(event.target.value as "EN" | "PT")}><option value="EN">🇺🇸 English</option><option value="PT">🇧🇷 Português</option></select></div>;
+}
+
+function Dashboard({ configured, memberCount, members, onSetup, onManage, language, onLanguageChange }: { configured: boolean; memberCount: number; members: Record<string, MemberRecord>; onSetup: () => void; onManage: () => void; language: "EN" | "PT"; onLanguageChange: (language: "EN" | "PT") => void }) {
   const [showBackfill, setShowBackfill] = useState(false);
   const [steamId, setSteamId] = useState("");
   const [appid, setAppid] = useState("");
@@ -311,14 +324,16 @@ function Dashboard({ configured, memberCount, steamApiKey, members, onSetup, onM
     const data = await response.json();
     setFeedback(data.success ? `Backfill concluído: ${data.result}.` : `Erro: ${data.error}`);
   };
+  const pt = language === "PT";
   return <div className="container">
-    <header className="header"><div className="brand-badge-group">🎮 Steam Family Notifier</div><h1 className="title">Seu painel da família</h1><p className="subtitle">Configure uma vez, acompanhe a biblioteca e mantenha as estatísticas consistentes.</p>{configured && <div className="existing-config-alert"><span className="pulse-dot" /> Aplicação configurada · {memberCount} membros</div>}</header>
+    <LanguageSelector language={language} onChange={onLanguageChange} />
+    <header className="header"><div className="brand-badge-group">🎮 Steam Family Notifier</div><h1 className="title">{pt ? "Seu painel da família" : "Your family dashboard"}</h1><p className="subtitle">{pt ? "Configure uma vez, acompanhe a biblioteca e mantenha as estatísticas consistentes." : "Configure once, monitor the library, and keep your statistics consistent."}</p>{configured && <div className="existing-config-alert"><span className="pulse-dot" /> {pt ? `Aplicação configurada · ${memberCount} membros` : `Application configured · ${memberCount} members`}</div>}</header>
     <main className="dashboard-grid">
-      {!configured && <section className="main-card dashboard-card"><span className="card-kicker">Primeiro passo</span><h2>Comece sua configuração</h2><p className="field-desc">Conecte sua chave Steam, webhook do Discord e escolha os membros da família.</p><button className="btn btn-primary" onClick={onSetup}>Começar setup →</button></section>}
+      {!configured && <section className="main-card dashboard-card"><span className="card-kicker">{pt ? "Primeiro passo" : "First step"}</span><h2>{pt ? "Comece sua configuração" : "Start your setup"}</h2><p className="field-desc">{pt ? "Conecte sua chave Steam, webhook do Discord e escolha os membros da família." : "Connect your Steam key, Discord webhook, and choose your family members."}</p><button className="btn btn-primary" onClick={onSetup}>{pt ? "Começar setup →" : "Start setup →"}</button></section>}
       {configured && <>
-        <section className="main-card dashboard-card"><span className="card-kicker">Aplicação ativa</span><h2>Gerenciar aplicação</h2><p className="field-desc">Edite membros e preferências. Alterações de membros enviam avisos somente aqui — nunca durante o setup inicial.</p><button className="btn btn-primary" onClick={onManage}>Editar membros e configurações →</button></section>
-        <section className="main-card dashboard-card"><span className="card-kicker">Correção operacional</span><h2>Manual backfill</h2><p className="field-desc">Recalcule uma compra que ficou fora das estatísticas do GitHub Actions.</p><button className="btn btn-secondary" onClick={() => setShowBackfill((value) => !value)}>{showBackfill ? "Fechar" : "Abrir backfill"}</button>
-          {showBackfill && <div className="backfill-form"><label className="field-label">Membro<select value={steamId} onChange={(e) => setSteamId(e.target.value)}><option value="">Selecione…</option>{Object.entries(members).map(([id, member]) => <option key={id} value={id}>{member.name} — {id}</option>)}</select></label><label className="field-label">AppID<input type="text" value={appid} onChange={(e) => setAppid(e.target.value)} placeholder="4659620" /></label><label className="field-label">Preço manual (opcional)<input type="text" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="deixe vazio para consultar Steam" /></label><label className="check-row"><input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} /> Dry run — não salvar nem notificar</label>{!dryRun && <label className="check-row"><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> Notificar no Discord</label>}<button className={`btn ${dryRun ? "btn-secondary" : "btn-success"}`} onClick={runBackfill} disabled={!steamId || !appid}>{dryRun ? "Simular backfill" : "Executar backfill"}</button>{feedback && <div className="feedback-box info">{feedback}</div>}</div>}
+        <section className="main-card dashboard-card"><span className="card-kicker">{pt ? "Aplicação ativa" : "Active application"}</span><h2>{pt ? "Gerenciar aplicação" : "Manage application"}</h2><p className="field-desc">{pt ? "Edite membros e preferências. Alterações de membros enviam avisos somente aqui — nunca durante o setup inicial." : "Edit members and preferences. Member changes notify only here — never during initial setup."}</p><button className="btn btn-primary" onClick={onManage}>{pt ? "Editar membros e configurações →" : "Edit members and settings →"}</button></section>
+        <section className="main-card dashboard-card"><span className="card-kicker">{pt ? "Correção operacional" : "Operational repair"}</span><h2>Manual backfill</h2><p className="field-desc">{pt ? "Recalcule uma compra que ficou fora das estatísticas do GitHub Actions." : "Recalculate a purchase missing from GitHub Actions statistics."}</p><button className="btn btn-secondary" onClick={() => setShowBackfill((value) => !value)}>{showBackfill ? (pt ? "Fechar" : "Close") : (pt ? "Abrir backfill" : "Open backfill")}</button>
+          {showBackfill && <div className="backfill-form"><label className="field-label">{pt ? "Membro" : "Member"}<select value={steamId} onChange={(e) => setSteamId(e.target.value)}><option value="">{pt ? "Selecione…" : "Select…"}</option>{Object.entries(members).map(([id, member]) => <option key={id} value={id}>{member.name} — {id}</option>)}</select></label><label className="field-label">AppID<input type="text" value={appid} onChange={(e) => setAppid(e.target.value)} placeholder="4659620" /></label><label className="field-label">{pt ? "Preço manual (opcional)" : "Manual price (optional)"}<input type="text" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={pt ? "deixe vazio para consultar Steam" : "leave empty to query Steam"} /></label><label className="check-row"><input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} /> {pt ? "Dry run — não salvar nem notificar" : "Dry run — do not save or notify"}</label>{!dryRun && <label className="check-row"><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> {pt ? "Notificar no Discord" : "Notify on Discord"}</label>}<button className={`btn ${dryRun ? "btn-secondary" : "btn-success"}`} onClick={runBackfill} disabled={!steamId || !appid}>{dryRun ? (pt ? "Simular backfill" : "Simulate backfill") : (pt ? "Executar backfill" : "Run backfill")}</button>{feedback && <div className="feedback-box info">{feedback}</div>}</div>}
         </section>
       </>}
     </main>

@@ -8,6 +8,7 @@ interface StepCredentialsProps {
   discordWebhookUrl: string;
   onChangeDiscordWebhookUrl: (val: string) => void;
   onToast: (msg: string) => void;
+  language?: "EN" | "PT";
 }
 
 export function StepCredentials({
@@ -16,7 +17,9 @@ export function StepCredentials({
   discordWebhookUrl,
   onChangeDiscordWebhookUrl,
   onToast,
+  language = "EN",
 }: StepCredentialsProps) {
+  const pt = language === "PT";
   const [showKey, setShowKey] = useState(false);
   const [verifyingSteam, setVerifyingSteam] = useState(false);
   const [testingDiscord, setTestingDiscord] = useState(false);
@@ -81,8 +84,8 @@ export function StepCredentials({
   return (
     <section>
       <div className="step-title-area">
-        <h2>API Credentials & Webhooks</h2>
-        <p>Connect your Steam account to inspect family libraries and configure your Discord channel for announcements.</p>
+        <h2>{pt ? "Credenciais de API e webhooks" : "API Credentials & Webhooks"}</h2>
+        <p>{pt ? "Conecte sua conta Steam para consultar bibliotecas e configure o canal do Discord para os avisos." : "Connect your Steam account to inspect family libraries and configure your Discord channel for announcements."}</p>
       </div>
 
       {/* Steam API Key */}
