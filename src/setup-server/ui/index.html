@@ -277,6 +277,18 @@
               <p>To have GitHub automatically check games every 15 minutes for free, set these Secrets in your GitHub Repository under <b>Settings &gt; Secrets and variables &gt; Actions</b>.</p>
             </div>
 
+            <div class="deploy-action-box">
+              <h3>⚡ Configure GitHub automatically</h3>
+              <p>Enter your target repository and token. Use Dry Run first; it performs no GitHub changes.</p>
+              <div class="form-grid">
+                <div class="form-group"><label for="github-target-repo">Target repository (owner/name)</label><input id="github-target-repo" type="text" placeholder="your-user/steam-family-notifier"></div>
+                <div class="form-group"><label for="github-token">GitHub token <small>(only needed to apply)</small></label><input id="github-token" type="password" placeholder="Token with repository and Actions permissions"></div>
+              </div>
+              <label class="check-row"><input id="github-dry-run" type="checkbox" checked> Dry Run — preview only, do not change GitHub</label>
+              <button type="button" id="btn-github-setup" class="btn btn-primary">🧪 Preview GitHub Setup</button>
+              <div id="github-feedback" class="status-feedback"></div>
+            </div>
+
             <div class="secrets-action-bar">
               <button type="button" id="btn-copy-gh-cli" class="btn btn-secondary">
                 📋 Copy GitHub CLI Script

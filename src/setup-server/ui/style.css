@@ -1,0 +1,15 @@
+:root { font-family: Inter, Arial, sans-serif; color: #e5e7eb; background: #0b1120; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: linear-gradient(135deg, #0b1120, #111827); }
+.container { width: min(1100px, 94%); margin: 0 auto; padding: 32px 0; }
+.header, .main-card { background: rgba(17, 24, 39, .92); border: 1px solid #263247; border-radius: 16px; padding: 24px; }
+.header { text-align: center; margin-bottom: 18px; }
+.title { margin: 12px 0 6px; color: #fff; }
+.subtitle, .field-desc, .tab-intro, .box-header p { color: #9ca3af; }
+.stepper, .controls-footer, .tab-nav, .secrets-action-bar { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+.step-item { cursor: pointer; color: #9ca3af; text-align: center; }.step-item.active { color: #60a5fa; font-weight: 700; }.step-circle { margin: auto; border: 1px solid #475569; border-radius: 50%; width: 30px; height: 30px; padding-top: 5px; }.active .step-circle { background: #2563eb; border-color: #60a5fa; color: white; }
+.step-section { display: none; }.step-section.active { display: block; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }.form-group { margin: 12px 0; } label { display: block; font-weight: 600; margin-bottom: 7px; } input, select { width: 100%; padding: 11px; border: 1px solid #475569; border-radius: 8px; background: #0f172a; color: #e5e7eb; }
+.btn { border: 0; border-radius: 8px; padding: 10px 15px; cursor: pointer; color: white; background: #2563eb; }.btn-secondary { background: #334155; }.btn-success { background: #059669; }.btn:disabled { opacity: .5; cursor: not-allowed; }
+.hidden { display: none !important; }.status-feedback { margin-top: 10px; min-height: 20px; }.status-feedback.success { color: #6ee7b7; }.status-feedback.error { color: #fca5a5; }.deploy-action-box, .summary-card, .members-container, .info-callout { margin: 18px 0; padding: 18px; border: 1px solid #263247; border-radius: 12px; background: rgba(15, 23, 42, .7); }.summary-card { display: flex; gap: 28px; flex-wrap: wrap; }.summary-label { color: #9ca3af; display: block; }.summary-value { font-size: 1.3rem; font-weight: 700; }.member-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #263247; }.member-card code { color: #93c5fd; flex: 1; }.check-row { display: flex; align-items: center; gap: 8px; margin: 14px 0; }.check-row input { width: auto; }
+@media (max-width: 600px) { .container { padding: 14px 0; }.header, .main-card { padding: 16px; }.member-card { flex-wrap: wrap; } }

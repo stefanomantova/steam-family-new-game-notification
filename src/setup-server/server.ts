@@ -22,6 +22,7 @@ import { SteamStoreClient } from "../adapters/steam-store-client.js";
 import { DiscordWebhookNotifier } from "../adapters/discord-webhook-notifier.js";
 import { JsonStateRepository, JsonStatsRepository } from "../adapters/json-repositories.js";
 import { checkNewGames } from "../application/check-new-games.js";
+import { applyGitHubSetup } from "../application/github-setup.js";
 
 const DEFAULT_PORT = 3847;
 
@@ -184,6 +185,29 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
           success: false,
           error: error instanceof Error ? error.message : "Failed to send Discord test message.",
         });
+      }
+      return;
+    }
+
+    if (pathname === "/api/github") {
+      try {
+        const config = (body.config || {}) as Record<string, any>;
+        const plan = await applyGitHubSetup({
+          ...(String(body.githubToken || "").trim() ? { token: String(body.githubToken).trim() } : {}),
+          templateRepo: String(body.templateRepo || "stefanomantova/steam-family-new-game-notification"),
+          targetRepo: String(body.targetRepo || ""),
+          config: {
+            steamApiKey: String(config.steamApiKey || ""),
+            discordWebhookUrl: String(config.discordWebhookUrl || ""),
+            members: (config.members || {}) as Record<string, string>,
+            messageLanguage: config.messageLanguage === "PT" ? "PT" : "EN",
+            storeCountryCode: String(config.storeCountryCode || "br").toLowerCase(),
+          },
+          dryRun: Boolean(body.dryRun),
+        });
+        jsonResponse(res, 200, { success: true, plan });
+      } catch (error) {
+        jsonResponse(res, 400, { success: false, error: error instanceof Error ? error.message : "GitHub setup failed." });
       }
       return;
     }

@@ -19,7 +19,7 @@ await writeFile(join(appRoot, "package.json"), JSON.stringify({ type: "module" }
 await writeFile(join(appRoot, "run-setup.cmd"), [
   "@echo off",
   "cd /d \"%~dp0\"",
-  "node.exe dist\\cli\\setup.js",
+  "node.exe dist\\cli\\setup-server.js",
   "",
 ].join("\r\n"), "utf8");
 
