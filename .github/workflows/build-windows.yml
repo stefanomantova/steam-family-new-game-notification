@@ -1,0 +1,43 @@
+name: Build Windows Portable Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and inspect the package without publishing a release artifact"
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run package:windows
+
+      - name: Upload package for dry-run inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: SteamFamilyNotifier-windows
+          path: dist-windows/SteamFamilyNotifier
+
+      - name: Explain dry-run result
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: echo "Dry run requested. The package was built and uploaded only as a workflow artifact; no release was created."

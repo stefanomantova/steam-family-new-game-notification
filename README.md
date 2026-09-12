@@ -51,6 +51,14 @@ Then open **http://localhost:3000** in your browser. The wizard walks you throug
 
 > **No Node.js installed?** You can also set everything up manually — see the manual setup below.
 
+### No-install Windows option
+
+Windows users can download the portable package from the repository's **Actions → Build Windows Portable Package → Artifacts**. It includes its own Node runtime, so Node.js and NPM do not need to be installed separately.
+
+Run `run-setup.cmd` to open the local setup wizard, then use its **Dry Run** option to validate the configuration and preview generated files without writing them. Use `run-check.cmd` for a manual check after configuration.
+
+The portable package is a local helper; it does not replace the private GitHub repository used for 15-minute scheduling and state persistence. A future release can wrap the same entry point as a single-file executable, but the portable package is intentionally the first low-risk distribution format.
+
 ---
 
 ### Step 4 (Alternative) — Manual Setup
@@ -184,5 +192,4 @@ stats.json                  → committed purchase totals for /ranking
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
 

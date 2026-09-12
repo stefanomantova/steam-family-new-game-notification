@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "setup": "npm run build && node dist/cli/setup.js",
     "setup:ui": "npm --prefix web install && npm --prefix web run dev",
+    "package:windows": "npm run build && node scripts/package-windows.mjs",
     "check-new-games": "node dist/cli/check-new-games.js",
     "backfill-purchase": "node dist/cli/backfill-purchase.js"
   },

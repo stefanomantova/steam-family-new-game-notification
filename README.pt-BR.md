@@ -51,6 +51,14 @@ Depois abra **http://localhost:3000** no seu navegador. O assistente guia você 
 
 > **Não tem Node.js instalado?** Você também pode configurar tudo manualmente — veja o passo alternativo abaixo.
 
+### Opção Windows sem instalação
+
+Usuários do Windows podem baixar o pacote portátil em **Actions → Build Windows Portable Package → Artifacts**. Ele já inclui seu próprio runtime do Node, portanto não é necessário instalar Node.js ou NPM separadamente.
+
+Execute `run-setup.cmd` para abrir o assistente local e use a opção **Dry Run** para validar a configuração e visualizar os arquivos gerados sem gravá-los. Use `run-check.cmd` para uma verificação manual depois da configuração.
+
+O pacote portátil é um auxiliar local; ele não substitui o repositório privado do GitHub usado pelo agendamento a cada 15 minutos e pela persistência do estado. Uma versão futura pode transformar o mesmo ponto de entrada em um executável único, mas o pacote portátil é o primeiro formato de distribuição de menor risco.
+
 ---
 
 ### Passo 4 (Alternativo) — Configuração Manual

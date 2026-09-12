@@ -135,7 +135,7 @@ export async function fetchPlayerSummary(apiKey: string, steamId: string): Promi
     personaName: player.personaname || `Player ${steamId}`,
     avatarUrl: player.avatarfull || player.avatar || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg",
     isProfilePublic,
-    gameCount,
+    ...(gameCount === undefined ? {} : { gameCount }),
   };
 }
 
