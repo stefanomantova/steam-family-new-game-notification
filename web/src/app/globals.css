@@ -950,3 +950,21 @@ input:checked + .toggle-slider:before {
   color: #38bdf8;
 }
 
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.dashboard-card h2 { font-family: var(--font-display); margin: 8px 0; }
+.card-kicker { color: var(--steam-cyan); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.backfill-form { display: grid; gap: 12px; margin-top: 20px; }
+.backfill-form .field-label { display: grid; gap: 6px; }
+.check-row { color: var(--text-secondary); font-size: .88rem; display: flex; gap: 8px; align-items: center; }
+.diff-page { max-width: 760px; }
+.diff-member { border-top: 1px solid var(--border-color); padding: 18px 0; }
+.diff-member:first-child { border-top: 0; padding-top: 0; }
+.diff-member h2 { font-family: var(--font-display); font-size: 1.25rem; }
+.diff-member ul { list-style: none; display: grid; gap: 8px; margin-top: 12px; }
+.diff-member a { color: var(--steam-cyan); text-decoration: none; }
+.diff-member a:hover { text-decoration: underline; }

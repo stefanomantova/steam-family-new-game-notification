@@ -12,6 +12,7 @@ export interface BackfillInput {
   manualPrice?: number;
   manualCurrency?: string;
   notify: boolean;
+  dryRun?: boolean;
 }
 
 export interface BackfillConfig {
@@ -31,7 +32,7 @@ export async function backfillPurchase(
   config: BackfillConfig,
   input: BackfillInput,
   dependencies: BackfillDependencies,
-): Promise<"added" | "skipped-free" | "skipped-unknown"> {
+): Promise<"added" | "dry-run" | "skipped-free" | "skipped-unknown"> {
   const log = dependencies.log ?? console.log;
   const buyerName = config.members[input.steamId] ?? input.steamId;
   const gameName = input.gameName ?? (await dependencies.store.fetchGameName(input.appid, config.storeCountryCode));
@@ -59,6 +60,11 @@ export async function backfillPurchase(
   if (price.kind === "unknown") {
     log("Could not determine a price for this appid automatically. Nothing was added.");
     return "skipped-unknown";
+  }
+
+  if (input.dryRun) {
+    log(`Dry run: '${gameName}' would add ${(price.priceCents / 100).toFixed(2)}${price.currency ? ` ${price.currency}` : ""} to ${buyerName}'s stats.`);
+    return "dry-run";
   }
 
   const stats: PurchaseStats = await dependencies.stats.load();

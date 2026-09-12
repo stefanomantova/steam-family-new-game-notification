@@ -10,6 +10,8 @@ import { StepDeploy } from "@/components/StepDeploy";
 import { ToastContainer } from "@/components/Toast";
 
 export default function Home() {
+  const [view, setView] = useState<"dashboard" | "setup">("dashboard");
+  const [managementMode, setManagementMode] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [steamApiKey, setSteamApiKey] = useState("");
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState("");
@@ -49,6 +51,7 @@ export default function Home() {
         const data = await res.json();
         if (data.hasExistingConfig) {
           setHasExistingConfig(true);
+          setView("dashboard");
           const c = data.config;
           if (c.steamApiKey) setSteamApiKey(c.steamApiKey);
           if (c.discordWebhookUrl) setDiscordWebhookUrl(c.discordWebhookUrl);
@@ -133,6 +136,17 @@ export default function Home() {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
+  if (view === "dashboard") {
+    return <Dashboard
+      configured={hasExistingConfig}
+      memberCount={Object.keys(members).length}
+      steamApiKey={steamApiKey}
+      members={members}
+      onSetup={() => { setManagementMode(false); setCurrentStep(1); setView("setup"); }}
+      onManage={() => { setManagementMode(true); setCurrentStep(2); setView("setup"); }}
+    />;
+  }
+
   return (
     <div className="container">
       {/* Top Header */}
@@ -154,9 +168,7 @@ export default function Home() {
         </div>
 
         <h1 className="title">Steam Family Notifier</h1>
-        <p className="subtitle">
-          Setup Wizard and Management Hub for your Family Sharing library notifications.
-        </p>
+        <p className="subtitle">{managementMode ? "Manage your family members and repair purchase statistics." : "Set up Steam Family Notifier for your Discord server."}</p>
 
         {hasExistingConfig && (
           <div className="existing-config-alert">
@@ -243,6 +255,7 @@ export default function Home() {
             workerUrl={workerUrl}
             githubRepo={githubRepo}
             onToast={addToast}
+            managementMode={managementMode}
           />
         )}
 
@@ -284,3 +297,30 @@ export default function Home() {
   );
 }
 
+function Dashboard({ configured, memberCount, steamApiKey, members, onSetup, onManage }: { configured: boolean; memberCount: number; steamApiKey: string; members: Record<string, MemberRecord>; onSetup: () => void; onManage: () => void }) {
+  const [showBackfill, setShowBackfill] = useState(false);
+  const [steamId, setSteamId] = useState("");
+  const [appid, setAppid] = useState("");
+  const [price, setPrice] = useState("");
+  const [notify, setNotify] = useState(false);
+  const [dryRun, setDryRun] = useState(true);
+  const [feedback, setFeedback] = useState("");
+  const runBackfill = async () => {
+    setFeedback("Executando…");
+    const response = await fetch("/api/backfill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ steamId, appid, manualPrice: price, notify: dryRun ? false : notify, dryRun }) });
+    const data = await response.json();
+    setFeedback(data.success ? `Backfill concluído: ${data.result}.` : `Erro: ${data.error}`);
+  };
+  return <div className="container">
+    <header className="header"><div className="brand-badge-group">🎮 Steam Family Notifier</div><h1 className="title">Seu painel da família</h1><p className="subtitle">Configure uma vez, acompanhe a biblioteca e mantenha as estatísticas consistentes.</p>{configured && <div className="existing-config-alert"><span className="pulse-dot" /> Aplicação configurada · {memberCount} membros</div>}</header>
+    <main className="dashboard-grid">
+      {!configured && <section className="main-card dashboard-card"><span className="card-kicker">Primeiro passo</span><h2>Comece sua configuração</h2><p className="field-desc">Conecte sua chave Steam, webhook do Discord e escolha os membros da família.</p><button className="btn btn-primary" onClick={onSetup}>Começar setup →</button></section>}
+      {configured && <>
+        <section className="main-card dashboard-card"><span className="card-kicker">Aplicação ativa</span><h2>Gerenciar aplicação</h2><p className="field-desc">Edite membros e preferências. Alterações de membros enviam avisos somente aqui — nunca durante o setup inicial.</p><button className="btn btn-primary" onClick={onManage}>Editar membros e configurações →</button></section>
+        <section className="main-card dashboard-card"><span className="card-kicker">Correção operacional</span><h2>Manual backfill</h2><p className="field-desc">Recalcule uma compra que ficou fora das estatísticas do GitHub Actions.</p><button className="btn btn-secondary" onClick={() => setShowBackfill((value) => !value)}>{showBackfill ? "Fechar" : "Abrir backfill"}</button>
+          {showBackfill && <div className="backfill-form"><label className="field-label">Membro<select value={steamId} onChange={(e) => setSteamId(e.target.value)}><option value="">Selecione…</option>{Object.entries(members).map(([id, member]) => <option key={id} value={id}>{member.name} — {id}</option>)}</select></label><label className="field-label">AppID<input type="text" value={appid} onChange={(e) => setAppid(e.target.value)} placeholder="4659620" /></label><label className="field-label">Preço manual (opcional)<input type="text" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="deixe vazio para consultar Steam" /></label><label className="check-row"><input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} /> Dry run — não salvar nem notificar</label>{!dryRun && <label className="check-row"><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> Notificar no Discord</label>}<button className={`btn ${dryRun ? "btn-secondary" : "btn-success"}`} onClick={runBackfill} disabled={!steamId || !appid}>{dryRun ? "Simular backfill" : "Executar backfill"}</button>{feedback && <div className="feedback-box info">{feedback}</div>}</div>}
+        </section>
+      </>}
+    </main>
+  </div>;
+}

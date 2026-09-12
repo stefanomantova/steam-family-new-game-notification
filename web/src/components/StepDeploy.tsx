@@ -18,6 +18,7 @@ interface StepDeployProps {
   workerUrl?: string;
   githubRepo?: string;
   onToast: (msg: string) => void;
+  managementMode?: boolean;
 }
 
 export function StepDeploy({
@@ -35,6 +36,7 @@ export function StepDeploy({
   workerUrl = "",
   githubRepo = "",
   onToast,
+  managementMode = false,
 }: StepDeployProps) {
   const [activeTab, setActiveTab] = useState<"local" | "github">("local");
   const [isDryRun, setIsDryRun] = useState(false);
@@ -77,6 +79,8 @@ export function StepDeploy({
           workerUrl,
           githubRepo,
           dryRun: isDryRun,
+          management: managementMode,
+          appUrl: window.location.origin,
         }),
       });
       const data = await res.json();

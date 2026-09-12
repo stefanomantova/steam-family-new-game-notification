@@ -4,6 +4,22 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { getProjectRoot } from "@/lib/paths";
 
+type Library = Record<string, string>;
+
+async function fetchLibrary(steamApiKey: string, steamId: string): Promise<Library> {
+  const url = new URL("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/");
+  url.search = new URLSearchParams({ key: steamApiKey, steamid: steamId, format: "json", include_appinfo: "1", include_played_free_games: "1" }).toString();
+  const response = await fetch(url.toString());
+  if (!response.ok) throw new Error(`Steam returned HTTP ${response.status} for ${steamId}.`);
+  const data = (await response.json()) as { response?: { games?: Array<{ appid: number; name?: string }> } };
+  return Object.fromEntries((data.response?.games ?? []).map((game) => [String(game.appid), game.name ?? `App ${game.appid}`]));
+}
+
+async function sendWebhook(url: string, content: string): Promise<void> {
+  const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }) });
+  if (!response.ok) throw new Error(`Discord returned HTTP ${response.status}.`);
+}
+
 function dotenvValue(value: string): string {
   if (/^[A-Za-z0-9_./:-]+$/.test(value)) {
     return value;
@@ -68,6 +84,12 @@ export async function POST(req: Request) {
     const wranglerPath = path.resolve(root, "discord-bot", "wrangler.toml");
 
     const isDryRun = Boolean(body.dryRun);
+    const isManagement = Boolean(body.management);
+
+    const previousMembers = existsSync(membersPath) ? JSON.parse(await readFile(membersPath, "utf8")) as Record<string, string> : {};
+    const addedIds = isManagement ? memberEntries.map(([id]) => id).filter((id) => !previousMembers[id]) : [];
+    const removedIds = isManagement ? Object.keys(previousMembers).filter((id) => !members[id]) : [];
+    const notifications: string[] = [];
 
     const envLines = [
       `STEAM_API_KEY=${dotenvValue(steamApiKey)}`,
@@ -95,6 +117,44 @@ export async function POST(req: Request) {
     if (!isDryRun) {
       await writeFile(envPath, envContent, "utf8");
       await writeFile(membersPath, membersContent, "utf8");
+
+      if (isManagement && (addedIds.length || removedIds.length)) {
+        const statePath = path.resolve(root, "state.json");
+        const state: Record<string, Library> = existsSync(statePath) ? JSON.parse(await readFile(statePath, "utf8")) : {};
+        const oldUnion = new Set(Object.keys(state).filter((id) => !addedIds.includes(id)).flatMap((id) => Object.keys(state[id] ?? {})));
+        const diffId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const diff: Record<string, unknown> = { id: diffId, createdAt: new Date().toISOString(), members: [] };
+        const diffMembers: Array<{ name: string; games: Array<{ appid: string; name: string }> }> = [];
+
+        for (const id of addedIds) {
+          const library = await fetchLibrary(steamApiKey, id);
+          state[id] = library;
+          const games = Object.entries(library).filter(([appid]) => !oldUnion.has(appid)).map(([appid, name]) => ({ appid, name }));
+          diffMembers.push({ name: members[id], games });
+        }
+        for (const id of removedIds) delete state[id];
+        await writeFile(statePath, JSON.stringify(state, null, 2), "utf8");
+
+        if (addedIds.length) {
+          const diffsPath = path.resolve(root, "member-diffs.json");
+          const diffs = existsSync(diffsPath) ? JSON.parse(await readFile(diffsPath, "utf8")) : {};
+          (diff as { members: unknown[] }).members = diffMembers;
+          diffs[diffId] = diff;
+          await writeFile(diffsPath, JSON.stringify(diffs, null, 2), "utf8");
+          const link = `${String(body.appUrl || process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "")}/family/${diffId}`;
+          for (const member of diffMembers) {
+            notifications.push(messageLanguage === "PT"
+              ? `🎮 ${member.name} entrou na família! Clica aqui pra ter acesso aos jogos novos que ele trouxe! ${link}`
+              : `🎮 ${member.name} joined the family! Click here to see the new games they brought! ${link}`);
+          }
+        }
+        for (const id of removedIds) {
+          notifications.push(messageLanguage === "PT"
+            ? `👋 Membro ${previousMembers[id]} foi removido e não compartilha mais sua biblioteca!`
+            : `👋 Member ${previousMembers[id]} was removed and no longer shares their library!`);
+        }
+        if (notifications.length) await sendWebhook(discordWebhookUrl, notifications.join("\n"));
+      }
 
       // Update wrangler.toml GITHUB_REPO if githubRepo is specified
       if (githubRepo && existsSync(wranglerPath)) {
@@ -124,6 +184,7 @@ export async function POST(req: Request) {
         githubRepo,
         envPath,
         membersPath,
+        notifications,
       },
     });
   } catch (error) {
@@ -133,4 +194,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

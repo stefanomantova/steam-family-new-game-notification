@@ -1,6 +1,4 @@
 {
   "/page": "app/page.js",
-  "/api/config/route": "app/api/config/route.js",
-  "/api/steam/verify/route": "app/api/steam/verify/route.js",
-  "/api/discord/route": "app/api/discord/route.js"
+  "/api/config/route": "app/api/config/route.js"
 }

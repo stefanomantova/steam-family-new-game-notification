@@ -10,6 +10,7 @@ const GET_OWNED_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetOwne
 export async function POST(req: Request) {
   const logs: string[] = [];
   const log = (msg: string) => logs.push(msg);
+  let body: Record<string, any> = {};
 
   try {
     const root = getProjectRoot();
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
 
     // Allow payload override
     try {
-      const body = await req.json();
+      body = await req.json();
       if (body.steamApiKey) steamApiKey = body.steamApiKey;
       if (body.members) members = body.members;
     } catch {}
