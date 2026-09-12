@@ -204,12 +204,20 @@ directly against Steam's own flag — a missing price is *not* treated as
    that grants it, since that's what the buyer actually paid. The Discord
    message gets a small note: *"(price counted from the bundle/package it
    came in)"*.
-3. If the appid has no storefront page at all (`success: false` — some
-   library-only "wrapper" appids are like this) — a best-effort lookup by
-   **searching the Steam Store by name** and using the closest match's
-   price. Same bundle note applies. This relies on Steam's informal store
-   search endpoint, so it's less precise than a direct appid lookup.
-4. If none of the above finds a price — the purchase is still announced,
+3. A best-effort lookup by **searching the Steam Store by name** and using
+   the closest match's price. This covers some library-only "wrapper"
+   appids with no storefront page. Same bundle note applies. This relies on
+   Steam's informal store search endpoint, so it's less precise than a
+   direct appid lookup.
+4. SteamDB's displayed current price for the app, as a read-only fallback
+   when the Steam Store cannot provide one. SteamDB never determines whether
+   a game is free: only Steam Store's `is_free` flag does that.
+5. Bundle candidates listed by SteamDB, only after the normal app/package
+   and Steam Store search paths fail. The script first asks the Steam Store
+   for each bundle's price, then uses that bundle's SteamDB price only when
+   necessary. The game keeps its original appid in the notification and
+   statistics.
+6. If none of the above finds a price — the purchase is still announced,
    but flagged as **not counted in the ranking**, and the message tells
    whoever's running the group which command to run to fix it manually
    (see below).

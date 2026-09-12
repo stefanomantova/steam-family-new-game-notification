@@ -43,7 +43,15 @@ export async function checkNewGames(
   for (const [steamId, name] of Object.entries(config.members)) {
     log(`Checking ${name}'s library (${steamId})...`);
     try {
-      currentByMember[steamId] = await dependencies.steam.fetchOwnedGames(steamId);
+      const currentGames = await dependencies.steam.fetchOwnedGames(steamId);
+      const previousGames = previousState[steamId] ?? {};
+
+      if (Object.keys(previousGames).length > 0 && Object.keys(currentGames).length === 0) {
+        log(`Keeping ${name}'s previous library: Steam returned no games.`);
+        continue;
+      }
+
+      currentByMember[steamId] = currentGames;
     } catch (error) {
       log(`Error fetching ${name}: ${error instanceof Error ? error.message : String(error)}`);
     }

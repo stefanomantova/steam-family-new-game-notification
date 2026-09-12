@@ -209,13 +209,21 @@ quê essa distinção importa).
    pacotes que dão acesso a ele, já que foi isso que a pessoa realmente
    pagou. A mensagem no Discord ganha uma notinha:
    *"(preço contabilizado a partir do bundle/pacote em que veio)"*.
-3. Se o appid nem tem ficha de loja (`success: false` — alguns appids
-   "wrapper", que só existem na biblioteca, são assim) — uma busca por
-   **nome do jogo** na própria Steam, usando o preço do resultado mais
-   compatível. Mesma nota de bundle se aplica. Depende de um endpoint de
-   busca informal da Steam, então é menos preciso que uma consulta direta
-   por appid.
-4. Se nada disso encontrar um preço — a compra ainda é anunciada, mas
+3. Uma busca pelo **nome do jogo** na própria Steam, usando o preço do
+   resultado mais compatível. Isso cobre alguns appids "wrapper", que só
+   existem na biblioteca e não têm ficha de loja. Mesma nota de bundle se
+   aplica. Depende de um endpoint de busca informal da Steam, então é menos
+   preciso que uma consulta direta por appid.
+4. O preço atual mostrado pelo SteamDB para o app, como fallback somente de
+   leitura quando a Steam Store não consegue fornecer um preço. O SteamDB
+   nunca decide se um jogo é grátis: só o campo `is_free` da Steam Store faz
+   isso.
+5. Candidatos a bundle listados pelo SteamDB, somente depois que os caminhos
+   normais de app/pacote e busca na Steam Store falham. Para cada bundle, o
+   script consulta primeiro o preço na Steam Store e só usa o preço do
+   SteamDB quando necessário. O jogo mantém seu appid original na mensagem e
+   nas estatísticas.
+6. Se nada disso encontrar um preço — a compra ainda é anunciada, mas
    marcada como **não contabilizada no ranking**, e a mensagem já diz
    pro admin do grupo qual comando rodar pra corrigir manualmente (veja
    abaixo).

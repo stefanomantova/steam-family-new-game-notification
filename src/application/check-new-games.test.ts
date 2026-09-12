@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkNewGames } from "./check-new-games.js";
-import type { LibrarySnapshot } from "../domain/models.js";
+import type { Library, LibrarySnapshot } from "../domain/models.js";
 import type { PurchaseStats } from "../domain/stats.js";
 
 function dependencies(previousState: LibrarySnapshot, initialStats: PurchaseStats) {
@@ -11,7 +11,7 @@ function dependencies(previousState: LibrarySnapshot, initialStats: PurchaseStat
   return {
     dependencies: {
       steam: {
-        fetchOwnedGames: async (steamId: string) => {
+        fetchOwnedGames: async (steamId: string): Promise<Library> => {
           if (steamId === "failed") {
             throw new Error("profile unavailable");
           }
@@ -55,6 +55,27 @@ function dependencies(previousState: LibrarySnapshot, initialStats: PurchaseStat
 }
 
 describe("checkNewGames", () => {
+  it("preserves a non-empty member state when Steam returns an empty library", async () => {
+    const initialState: LibrarySnapshot = {
+      alice: { "1": "Existing Game" },
+    };
+    const initialStats: PurchaseStats = { currency: null, members: {} };
+    const testContext = dependencies(initialState, initialStats);
+    testContext.dependencies.steam.fetchOwnedGames = async (): Promise<Library> => ({});
+
+    await checkNewGames(
+      {
+        members: { alice: "Alice" },
+        storeCountryCode: "br",
+        messageLanguage: "EN",
+      },
+      testContext.dependencies,
+    );
+
+    expect(testContext.getSavedState()).toEqual(initialState);
+    expect(testContext.messages).toEqual([]);
+  });
+
   it("updates successful members and leaves failed members unchanged", async () => {
     const initialState: LibrarySnapshot = {
       alice: { "1": "Old Game" },

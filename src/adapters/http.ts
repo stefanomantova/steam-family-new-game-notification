@@ -1,4 +1,4 @@
-export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+export async function fetchText(url: string, init?: RequestInit): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30_000);
 
@@ -7,9 +7,13 @@ export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} for ${url}`);
     }
-    const body = await response.text();
-    return (body ? JSON.parse(body) : undefined) as T;
+    return response.text();
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const body = await fetchText(url, init);
+  return (body ? JSON.parse(body) : undefined) as T;
 }
