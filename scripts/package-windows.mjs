@@ -13,13 +13,19 @@ await cp(resolve(projectRoot, "dist"), join(appRoot, "dist"), { recursive: true 
 await cp(resolve(projectRoot, "src", "setup-server", "ui"), join(appRoot, "src", "setup-server", "ui"), { recursive: true });
 await cp(resolve(projectRoot, "node_modules", "dotenv"), join(appRoot, "node_modules", "dotenv"), { recursive: true });
 await cp(resolve(projectRoot, "node_modules", "tweetnacl"), join(appRoot, "node_modules", "tweetnacl"), { recursive: true });
+await cp(resolve(projectRoot, "web", ".next", "standalone"), join(appRoot, "web"), { recursive: true });
+await cp(resolve(projectRoot, "web", ".next", "static"), join(appRoot, "web", ".next", "static"), { recursive: true });
 await cp(process.execPath, join(appRoot, "node.exe"));
 await writeFile(join(appRoot, "package.json"), JSON.stringify({ type: "module" }, null, 2) + "\n", "utf8");
 
 await writeFile(join(appRoot, "run-setup.cmd"), [
   "@echo off",
   "cd /d \"%~dp0\"",
-  "node.exe dist\\cli\\setup-server.js",
+  "set \"STEAM_FAMILY_PROJECT_ROOT=%~dp0\"",
+  "set \"PORT=3847\"",
+  "start \"Steam Family Notifier\" /b node.exe web\\server.js",
+  "timeout /t 2 /nobreak >nul",
+  "start \"\" http://localhost:3847",
   "",
 ].join("\r\n"), "utf8");
 
