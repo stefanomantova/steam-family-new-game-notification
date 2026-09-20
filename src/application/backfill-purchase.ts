@@ -39,12 +39,6 @@ export async function backfillPurchase(
 
   let price: PriceResult;
   if (input.manualPrice !== undefined) {
-  const log = dependencies.log ?? console.log;
-  const buyerName = config.members[input.steamId] ?? input.steamId;
-  const gameName = input.gameName ?? (await dependencies.store.fetchGameName(input.appid, config.storeCountryCode));
-
-  let price: PriceResult;
-  if (input.manualPrice !== undefined) {
     price = {
       kind: "paid",
       priceCents: Math.round(input.manualPrice * 100),
