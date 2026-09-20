@@ -23,7 +23,7 @@ describe("backfillPurchase", () => {
       },
       {
         store: {
-          fetchGameDetails: async () => ({ kind: "unknown" as const }),
+          fetchGameDetails: async () => ({ price: { kind: "unknown" as const }, isFamilyShareable: true }),
           fetchGameName: async () => "unused",
         },
         stats: {
@@ -54,7 +54,7 @@ describe("backfillPurchase", () => {
     let saveCount = 0;
     const dependencies = {
       store: {
-        fetchGameDetails: async (_appid: string, _name: string, _country: string) => ({ kind: "free" as const }),
+        fetchGameDetails: async (_appid: string, _name: string, _country: string) => ({ price: { kind: "free" as const }, isFamilyShareable: true }),
         fetchGameName: async () => "Free Game",
       },
       stats: {

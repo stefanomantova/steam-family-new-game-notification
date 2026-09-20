@@ -43,4 +43,28 @@ describe("message rendering", () => {
       ),
     ).toContain("preço contabilizado a partir do bundle/pacote");
   });
+
+  it("renders unshareable purchases with unshareable notice in PT and EN", () => {
+    expect(
+      renderGameMessage(
+        game,
+        { kind: "purchased", buyerSteamId: "alice" },
+        { kind: "paid", priceCents: 1000, fromBundle: false },
+        { alice: "Alice" },
+        "PT",
+        false,
+      ),
+    ).toContain("não compatível com Family Sharing, não contabilizado no ranking");
+
+    expect(
+      renderGameMessage(
+        game,
+        { kind: "purchased", buyerSteamId: "alice" },
+        { kind: "paid", priceCents: 1000, fromBundle: false },
+        { alice: "Alice" },
+        "EN",
+        false,
+      ),
+    ).toContain("not eligible for Family Sharing, not counted in the ranking");
+  });
 });

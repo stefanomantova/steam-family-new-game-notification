@@ -1,6 +1,6 @@
 import type { AppId } from "../domain/models.js";
 import { fallbackPrice, directPrice, type PriceResult } from "../domain/pricing.js";
-import type { StoreClient } from "../ports/store-client.js";
+import type { GameDetails, StoreClient } from "../ports/store-client.js";
 import { fetchJson, fetchText } from "./http.js";
 
 const STORE_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails";
@@ -31,6 +31,7 @@ interface AppDetailsResponse {
     data?: {
       is_free?: boolean;
       name?: string;
+      categories?: Array<{ id: number; description?: string }>;
       price_overview?: { final?: number; currency?: string };
       package_groups?: Array<{
         subs?: Array<{ price_in_cents_with_discount?: number }>;
@@ -63,8 +64,9 @@ export class SteamStoreClient implements StoreClient {
     appid: AppId,
     gameName: string,
     countryCode: string,
-  ): Promise<PriceResult> {
+  ): Promise<GameDetails> {
     let packagePrices: number[] = [];
+    let isFamilyShareable = true;
 
     try {
       const url = new URL(STORE_APPDETAILS_URL);
@@ -74,13 +76,17 @@ export class SteamStoreClient implements StoreClient {
 
       if (entry?.success) {
         const details = entry.data ?? {};
+        if (details.categories) {
+          isFamilyShareable = details.categories.some((cat) => cat.id === 62);
+        }
+
         const direct = directPrice(
           Boolean(details.is_free),
           details.price_overview?.final,
           details.price_overview?.currency,
         );
         if (direct.kind !== "unknown") {
-          return direct;
+          return { price: direct, isFamilyShareable };
         }
 
         packagePrices = (details.package_groups ?? []).flatMap((group) =>
@@ -95,32 +101,32 @@ export class SteamStoreClient implements StoreClient {
 
     const packagePrice = fallbackPrice(packagePrices, undefined, COUNTRY_CURRENCY[countryCode]);
     if (packagePrice.kind === "paid") {
-      return packagePrice;
+      return { price: packagePrice, isFamilyShareable };
     }
 
     const search = await this.searchPrice(gameName, countryCode);
     if (search.kind === "paid") {
-      return search;
+      return { price: search, isFamilyShareable };
     }
 
     const steamDbAppPrice = await this.fetchSteamDbPrice(appid, "app", countryCode);
     if (steamDbAppPrice) {
-      return { kind: "paid", ...steamDbAppPrice, fromBundle: false };
+      return { price: { kind: "paid", ...steamDbAppPrice, fromBundle: false }, isFamilyShareable };
     }
 
     for (const bundleId of await this.findBundlesForApp(appid)) {
       const bundlePrice = await this.fetchBundlePrice(bundleId, countryCode);
       if (bundlePrice) {
-        return { kind: "paid", ...bundlePrice, fromBundle: true };
+        return { price: { kind: "paid", ...bundlePrice, fromBundle: true }, isFamilyShareable };
       }
 
       const steamDbBundlePrice = await this.fetchSteamDbPrice(bundleId, "bundle", countryCode);
       if (steamDbBundlePrice) {
-        return { kind: "paid", ...steamDbBundlePrice, fromBundle: true };
+        return { price: { kind: "paid", ...steamDbBundlePrice, fromBundle: true }, isFamilyShareable };
       }
     }
 
-    return { kind: "unknown" };
+    return { price: { kind: "unknown" }, isFamilyShareable };
   }
 
   public async fetchGameName(appid: AppId, countryCode: string): Promise<string> {

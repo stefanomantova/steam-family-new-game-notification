@@ -22,10 +22,13 @@ function dependencies(previousState: LibrarySnapshot, initialStats: PurchaseStat
       },
       store: {
         fetchGameDetails: async () => ({
-          kind: "paid" as const,
-          priceCents: 2500,
-          currency: "BRL",
-          fromBundle: false,
+          price: {
+            kind: "paid" as const,
+            priceCents: 2500,
+            currency: "BRL",
+            fromBundle: false,
+          },
+          isFamilyShareable: true,
         }),
         fetchGameName: async (appid: string) => `App ${appid}`,
       },
@@ -109,5 +112,42 @@ describe("checkNewGames", () => {
       total_purchased: 1,
     });
     expect(testContext.messages).toEqual(["🎮 **Alice** bought a new game: **New Game**"]);
+  });
+
+  it("notifies unshareable games without updating stats", async () => {
+    const initialState: LibrarySnapshot = {
+      alice: { "1": "Old Game" },
+    };
+    const initialStats: PurchaseStats = { currency: null, members: {} };
+    const testContext = dependencies(initialState, initialStats);
+    testContext.dependencies.store.fetchGameDetails = async () => ({
+      price: {
+        kind: "paid" as const,
+        priceCents: 2500,
+        currency: "BRL",
+        fromBundle: false,
+      },
+      isFamilyShareable: false,
+    });
+
+    const report = await checkNewGames(
+      {
+        members: { alice: "Alice" },
+        storeCountryCode: "br",
+        messageLanguage: "EN",
+      },
+      testContext.dependencies,
+    );
+
+    expect(report).toEqual({
+      detectedGames: 1,
+      notifiedGames: 1,
+      stateChanged: true,
+      statsChanged: false,
+    });
+    expect(testContext.getSavedStats().members.alice).toBeUndefined();
+    expect(testContext.messages).toEqual([
+      "🎮 **Alice** bought a new game: **New Game** (not eligible for Family Sharing, not counted in the ranking)",
+    ]);
   });
 });

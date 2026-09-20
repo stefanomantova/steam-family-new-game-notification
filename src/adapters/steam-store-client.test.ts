@@ -18,10 +18,13 @@ describe("SteamStoreClient pricing fallbacks", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(new SteamStoreClient().fetchGameDetails("10", "Example", "br")).resolves.toEqual({
-      kind: "paid",
-      priceCents: 4299,
-      currency: "BRL",
-      fromBundle: false,
+      price: {
+        kind: "paid",
+        priceCents: 4299,
+        currency: "BRL",
+        fromBundle: false,
+      },
+      isFamilyShareable: true,
     });
   });
 
@@ -38,10 +41,13 @@ describe("SteamStoreClient pricing fallbacks", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(new SteamStoreClient().fetchGameDetails("10", "Example", "br")).resolves.toEqual({
-      kind: "paid",
-      priceCents: 1999,
-      currency: "BRL",
-      fromBundle: true,
+      price: {
+        kind: "paid",
+        priceCents: 1999,
+        currency: "BRL",
+        fromBundle: true,
+      },
+      isFamilyShareable: true,
     });
     expect(fetchMock).toHaveBeenCalledTimes(5);
   });
@@ -57,22 +63,50 @@ describe("SteamStoreClient pricing fallbacks", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(new SteamStoreClient().fetchGameDetails("10", "Example", "us")).resolves.toEqual({
-      kind: "paid",
-      priceCents: 1999,
-      currency: "USD",
-      fromBundle: true,
+      price: {
+        kind: "paid",
+        priceCents: 1999,
+        currency: "USD",
+        fromBundle: true,
+      },
+      isFamilyShareable: true,
     });
   });
 
   it("keeps Steam Store's free flag authoritative", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(response(JSON.stringify({
-      "10": { success: true, data: { is_free: true } },
+      "10": { success: true, data: { is_free: true, categories: [{ id: 62 }] } },
     })));
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(new SteamStoreClient().fetchGameDetails("10", "Example", "br")).resolves.toEqual({
-      kind: "free",
+      price: { kind: "free" },
+      isFamilyShareable: true,
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("detects when a game is not eligible for Family Sharing (missing category 62)", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(response(JSON.stringify({
+      "1222700": {
+        success: true,
+        data: {
+          is_free: false,
+          categories: [{ id: 1, description: "Multi-player" }, { id: 9, description: "Co-op" }],
+          price_overview: { final: 2670, currency: "BRL" },
+        },
+      },
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(new SteamStoreClient().fetchGameDetails("1222700", "A Way Out", "br")).resolves.toEqual({
+      price: {
+        kind: "paid",
+        priceCents: 2670,
+        currency: "BRL",
+        fromBundle: false,
+      },
+      isFamilyShareable: false,
+    });
   });
 });

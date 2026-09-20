@@ -71,18 +71,22 @@ MESSAGES = {
     "EN": {
         "shared": "🔗 A new game is available on Family Sharing! **{game}**, shared by **{source}**.",
         "purchased": "🎮 **{buyer}** bought a new game: **{game}**",
+        "purchased_unshareable": "🎮 **{buyer}** bought a new game: **{game}** (not eligible for Family Sharing, not counted in the ranking)",
         "bundle_note": "(price counted from the bundle/package it came in)",
         "retroactive_note": "(retroactively added)",
         "purchased_price_unknown": "🎮 **{buyer}** bought a new game: **{game}** (price unknown, not counted in the ranking)",
         "purchased_ambiguous": "🎮 A new game appeared in the group: **{game}** (not counted in the ranking, can't tell who bought it)",
+        "purchased_ambiguous_unshareable": "🎮 A new game appeared in the group: **{game}** (not eligible for Family Sharing, not counted in the ranking)",
     },
     "PT": {
         "shared": "🔗 Um jogo novo está disponível no Family Sharing! **{game}**, compartilhado por **{source}**.",
         "purchased": "🎮 **{buyer}** comprou um jogo novo: **{game}**",
+        "purchased_unshareable": "🎮 **{buyer}** comprou um jogo novo: **{game}** (não compatível com Family Sharing, não contabilizado no ranking)",
         "bundle_note": "(preço contabilizado a partir do bundle/pacote em que veio)",
         "retroactive_note": "(adicionado retroativamente)",
         "purchased_price_unknown": "🎮 **{buyer}** comprou um jogo novo: **{game}** (preço desconhecido, não contabilizado no ranking)",
         "purchased_ambiguous": "🎮 Um jogo novo apareceu no grupo: **{game}** (não contabilizado no ranking, não dá pra saber quem comprou)",
+        "purchased_ambiguous_unshareable": "🎮 Um jogo novo apareceu no grupo: **{game}** (não compatível com Family Sharing, não contabilizado no ranking)",
     },
 }
 

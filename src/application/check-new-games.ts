@@ -62,29 +62,35 @@ export async function checkNewGames(
   let statsChanged = false;
 
   for (const game of detectedGames) {
-    const price = await dependencies.store.fetchGameDetails(
+    const details = await dependencies.store.fetchGameDetails(
       game.appid,
       game.name,
       config.storeCountryCode,
     );
-    if (price.kind === "free") {
+    if (details.price.kind === "free") {
       log(`Skipping free game: ${game.name} (appid ${game.appid})`);
       continue;
     }
 
-    const attribution = attributeGame(game, previousState, config.members);
-    if (attribution.kind === "purchased" && price.kind === "paid") {
+    const attribution = attributeGame(
+      game,
+      previousState,
+      config.members,
+      details.isFamilyShareable,
+    );
+    if (attribution.kind === "purchased" && details.price.kind === "paid" && details.isFamilyShareable) {
       const buyerName = config.members[attribution.buyerSteamId] ?? attribution.buyerSteamId;
-      updateStats(stats, attribution.buyerSteamId, buyerName, price);
+      updateStats(stats, attribution.buyerSteamId, buyerName, details.price);
       statsChanged = true;
     }
 
     const message = renderGameMessage(
       game,
       attribution,
-      price,
+      details.price,
       config.members,
       config.messageLanguage,
+      details.isFamilyShareable,
     );
     log(message);
 

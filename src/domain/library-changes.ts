@@ -45,15 +45,18 @@ export function attributeGame(
   game: DetectedGame,
   previous: LibrarySnapshot,
   members: Members,
+  isFamilyShareable = true,
 ): Attribution {
   const recipientIds = new Set(game.recipientSteamIds);
 
-  for (const [steamId, previousGames] of Object.entries(previous)) {
-    if (!recipientIds.has(steamId) && Object.prototype.hasOwnProperty.call(previousGames, game.appid)) {
-      return {
-        kind: "shared",
-        sourceName: members[steamId] ?? steamId,
-      };
+  if (isFamilyShareable) {
+    for (const [steamId, previousGames] of Object.entries(previous)) {
+      if (!recipientIds.has(steamId) && Object.prototype.hasOwnProperty.call(previousGames, game.appid)) {
+        return {
+          kind: "shared",
+          sourceName: members[steamId] ?? steamId,
+        };
+      }
     }
   }
 

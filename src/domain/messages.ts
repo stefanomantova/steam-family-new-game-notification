@@ -7,20 +7,28 @@ const messages = {
   EN: {
     shared: "🔗 A new game is available on Family Sharing! **{game}**, shared by **{source}**.",
     purchased: "🎮 **{buyer}** bought a new game: **{game}**",
+    purchasedUnshareable:
+      "🎮 **{buyer}** bought a new game: **{game}** (not eligible for Family Sharing, not counted in the ranking)",
     bundleNote: "(price counted from the bundle/package it came in)",
     purchasedPriceUnknown:
       "🎮 **{buyer}** bought a new game: **{game}** (price unknown, not counted in the ranking)",
     purchasedAmbiguous:
       "🎮 A new game appeared in the group: **{game}** (not counted in the ranking, can't tell who bought it)",
+    purchasedAmbiguousUnshareable:
+      "🎮 A new game appeared in the group: **{game}** (not eligible for Family Sharing, not counted in the ranking)",
   },
   PT: {
     shared: "🔗 Um jogo novo está disponível no Family Sharing! **{game}**, compartilhado por **{source}**.",
     purchased: "🎮 **{buyer}** comprou um jogo novo: **{game}**",
+    purchasedUnshareable:
+      "🎮 **{buyer}** comprou um jogo novo: **{game}** (não compatível com Family Sharing, não contabilizado no ranking)",
     bundleNote: "(preço contabilizado a partir do bundle/pacote em que veio)",
     purchasedPriceUnknown:
       "🎮 **{buyer}** comprou um jogo novo: **{game}** (preço desconhecido, não contabilizado no ranking)",
     purchasedAmbiguous:
       "🎮 Um jogo novo apareceu no grupo: **{game}** (não contabilizado no ranking, não dá pra saber quem comprou)",
+    purchasedAmbiguousUnshareable:
+      "🎮 Um jogo novo apareceu no grupo: **{game}** (não compatível com Family Sharing, não contabilizado no ranking)",
   },
 } as const;
 
@@ -39,6 +47,7 @@ export function renderGameMessage(
   price: PriceResult,
   members: Record<string, string>,
   language: MessageLanguage,
+  isFamilyShareable = true,
 ): string {
   const text = messages[language];
 
@@ -47,10 +56,16 @@ export function renderGameMessage(
   }
 
   if (attribution.kind === "ambiguous") {
-    return replace(text.purchasedAmbiguous, { game: game.name });
+    return isFamilyShareable
+      ? replace(text.purchasedAmbiguous, { game: game.name })
+      : replace(text.purchasedAmbiguousUnshareable, { game: game.name });
   }
 
   const buyer = members[attribution.buyerSteamId] ?? attribution.buyerSteamId;
+  if (!isFamilyShareable) {
+    return replace(text.purchasedUnshareable, { buyer, game: game.name });
+  }
+
   if (price.kind === "unknown") {
     return replace(text.purchasedPriceUnknown, { buyer, game: game.name });
   }
