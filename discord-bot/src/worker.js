@@ -29,17 +29,30 @@ async function fetchStats(env) {
   const branch = env.GITHUB_BRANCH || "main";
   const path = env.GITHUB_STATS_PATH || "stats.json";
   const url = `https://api.github.com/repos/${env.GITHUB_REPO}/contents/${path}?ref=${branch}`;
+  const token = env.GITHUB_TOKEN?.trim();
+
+  if (!token) {
+    throw new Error("GitHub token is not configured in the Worker.");
+  }
 
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github.raw+json",
+      "X-GitHub-Api-Version": "2022-11-28",
       "User-Agent": "steam-family-notifier-ranking-bot",
     },
   });
 
   if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
+    let message = "unknown error";
+    try {
+      const error = await response.json();
+      message = error.message || message;
+    } catch {
+      // Keep the status when GitHub does not return JSON.
+    }
+    throw new Error(`GitHub API error: ${response.status} (${message})`);
   }
 
   return response.json();
