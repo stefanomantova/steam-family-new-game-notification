@@ -4,15 +4,12 @@
  * Cloudflare Worker that handles Discord's HTTP Interactions Endpoint.
  * It has no persistent state of its own: on every /ranking invocation
  * it fetches stats.json straight from the GitHub repository (via the
- * GitHub Contents API, so it works for private repos too) and replies
- * with the current rankings.
+ * GitHub Contents API) and replies with the current rankings.
  *
  * Required secrets (set with `wrangler secret put <NAME>`):
  * - DISCORD_PUBLIC_KEY  Application's public key (Discord Developer Portal
  *                        -> General Information -> Public Key)
- * - GITHUB_TOKEN         A GitHub token with read access to the repo
- *                        (a fine-grained PAT scoped to just this repo,
- *                        read-only, "Contents" permission, is enough)
+ * - GITHUB_TOKEN         Optional token for private repositories
  *
  * Required vars (set in wrangler.toml, not secret):
  * - GITHUB_REPO          "owner/repo", e.g. "yourname/steam-family-notifier"
@@ -31,18 +28,22 @@ async function fetchStats(env) {
   const url = `https://api.github.com/repos/${env.GITHUB_REPO}/contents/${path}?ref=${branch}`;
   const token = env.GITHUB_TOKEN?.trim();
 
-  if (!token) {
-    throw new Error("GitHub token is not configured in the Worker.");
-  }
+  const baseHeaders = {
+    Accept: "application/vnd.github.raw+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "steam-family-notifier-ranking-bot",
+  };
+  const requestHeaders = token ? { ...baseHeaders, Authorization: `Bearer ${token}` } : baseHeaders;
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github.raw+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "steam-family-notifier-ranking-bot",
-    },
+  let response = await fetch(url, {
+    headers: requestHeaders,
   });
+
+  // Public repositories do not need a token. Retry anonymously so an expired
+  // optional token cannot take down rankings for a public repository.
+  if (response.status === 401 && token) {
+    response = await fetch(url, { headers: baseHeaders });
+  }
 
   if (!response.ok) {
     let message = "unknown error";
@@ -51,6 +52,9 @@ async function fetchStats(env) {
       message = error.message || message;
     } catch {
       // Keep the status when GitHub does not return JSON.
+    }
+    if (response.status === 401) {
+      throw new Error("GitHub API rejected GITHUB_TOKEN. For a private repository, create a new token with Contents: Read-only access and redeploy the Worker.");
     }
     throw new Error(`GitHub API error: ${response.status} (${message})`);
   }

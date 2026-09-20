@@ -172,6 +172,7 @@ export function StepDeploy({
           members: memberMap,
           messageLanguage,
           storeCountryCode,
+          rankingBotGhToken,
           dryRun: isDryRun,
         }),
       });

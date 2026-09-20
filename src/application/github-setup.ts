@@ -9,6 +9,7 @@ export interface GitHubSetupConfig {
   members: Members;
   messageLanguage: string;
   storeCountryCode: string;
+  rankingBotGhToken?: string;
 }
 
 export interface GitHubSetupOptions {
@@ -33,6 +34,7 @@ export function createGitHubSetupPlan(options: GitHubSetupOptions): GitHubSetupP
     throw new Error("Template and target repositories must be different.");
   }
   const secrets = ["STEAM_API_KEY", "DISCORD_WEBHOOK_URL", "STEAM_MEMBERS", "MESSAGE_LANGUAGE", "STORE_COUNTRY_CODE"];
+  if (options.config.rankingBotGhToken?.trim()) secrets.push("RANKING_BOT_GH_TOKEN");
   return {
     templateRepo: options.templateRepo,
     targetRepo: options.targetRepo,
@@ -90,13 +92,15 @@ export async function applyGitHubSetup(options: GitHubSetupOptions): Promise<Git
 }
 
 function secretValues(config: GitHubSetupConfig): Record<string, string> {
-  return {
+  const values: Record<string, string> = {
     STEAM_API_KEY: config.steamApiKey,
     DISCORD_WEBHOOK_URL: config.discordWebhookUrl,
     STEAM_MEMBERS: JSON.stringify(config.members),
     MESSAGE_LANGUAGE: config.messageLanguage,
     STORE_COUNTRY_CODE: config.storeCountryCode,
   };
+  if (config.rankingBotGhToken?.trim()) values.RANKING_BOT_GH_TOKEN = config.rankingBotGhToken.trim();
+  return values;
 }
 
 function encryptSecret(value: string, publicKeyBase64: string): string {

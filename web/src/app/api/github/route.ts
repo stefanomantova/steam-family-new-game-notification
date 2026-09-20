@@ -29,6 +29,7 @@ export async function POST(request: Request) {
         members,
         messageLanguage: body.messageLanguage === "PT" ? "PT" : "EN",
         storeCountryCode: String(body.storeCountryCode || "br").trim().toLowerCase(),
+        rankingBotGhToken: String(body.rankingBotGhToken || "").trim(),
       },
       dryRun,
     });

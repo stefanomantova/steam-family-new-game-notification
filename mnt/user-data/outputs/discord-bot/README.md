@@ -42,14 +42,16 @@ npm install
 # Log in to your Cloudflare account (opens a browser window)
 npx wrangler login
 
-# Set the two secrets (you'll be prompted to paste each value)
+# Set the Discord secret (you'll be prompted to paste the value)
 npx wrangler secret put DISCORD_PUBLIC_KEY
+
+# Only needed when GITHUB_REPO is private
 npx wrangler secret put GITHUB_TOKEN
 
 npm run deploy
 ```
 
-`GITHUB_TOKEN` should be a GitHub **fine-grained personal access token**
+When `GITHUB_REPO` is private, `GITHUB_TOKEN` should be a GitHub **fine-grained personal access token**
 (Settings → Developer settings → Personal access tokens → Fine-grained
 tokens) scoped to just this one repository, with **Contents: Read-only**
 permission. That's enough to fetch `stats.json`, even from a private repo.
