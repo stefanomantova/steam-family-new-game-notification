@@ -7,7 +7,7 @@ const messages = {
   EN: {
     shared: "🔗 A new game is available on Family Sharing! **{game}**, shared by **{source}**.",
     sharedUnshareable:
-      "🔗 A new game appeared for the group: **{game}** (already owned by **{source}**, not eligible for Family Sharing)",
+      "🎮 **{source}** bought a new game: **{game}** (not eligible for Family Sharing, not counted in the ranking)",
     purchased: "🎮 **{buyer}** bought a new game: **{game}**",
     purchasedUnshareable:
       "🎮 **{buyer}** bought a new game: **{game}** (not eligible for Family Sharing, not counted in the ranking)",
@@ -22,7 +22,7 @@ const messages = {
   PT: {
     shared: "🔗 Um jogo novo está disponível no Family Sharing! **{game}**, compartilhado por **{source}**.",
     sharedUnshareable:
-      "🔗 Um jogo novo apareceu no grupo: **{game}** (já pertencia a **{source}**, não compatível com Family Sharing)",
+      "🎮 **{source}** comprou um jogo novo: **{game}** (não compatível com Family Sharing, não contabilizado no ranking)",
     purchased: "🎮 **{buyer}** comprou um jogo novo: **{game}**",
     purchasedUnshareable:
       "🎮 **{buyer}** comprou um jogo novo: **{game}** (não compatível com Family Sharing, não contabilizado no ranking)",

@@ -37,7 +37,7 @@ describe("message rendering", () => {
         false,
       ),
     ).toBe(
-      "🔗 A new game appeared for the group: **New Game** (already owned by **Bob**, not eligible for Family Sharing)",
+      "🎮 **Bob** bought a new game: **New Game** (not eligible for Family Sharing, not counted in the ranking)",
     );
   });
 

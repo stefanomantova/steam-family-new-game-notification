@@ -182,7 +182,7 @@ describe("checkNewGames", () => {
     expect(report.statsChanged).toBe(false);
     expect(testContext.getSavedStats().members).toEqual({});
     expect(testContext.messages).toEqual([
-      "🔗 A new game appeared for the group: **New Game** (already owned by **Alice**, not eligible for Family Sharing)",
+      "🎮 **Alice** bought a new game: **New Game** (not eligible for Family Sharing, not counted in the ranking)",
     ]);
   });
 });
