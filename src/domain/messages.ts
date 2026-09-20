@@ -6,6 +6,8 @@ export type MessageLanguage = "EN" | "PT";
 const messages = {
   EN: {
     shared: "🔗 A new game is available on Family Sharing! **{game}**, shared by **{source}**.",
+    sharedUnshareable:
+      "🔗 A new game appeared for the group: **{game}** (already owned by **{source}**, not eligible for Family Sharing)",
     purchased: "🎮 **{buyer}** bought a new game: **{game}**",
     purchasedUnshareable:
       "🎮 **{buyer}** bought a new game: **{game}** (not eligible for Family Sharing, not counted in the ranking)",
@@ -19,6 +21,8 @@ const messages = {
   },
   PT: {
     shared: "🔗 Um jogo novo está disponível no Family Sharing! **{game}**, compartilhado por **{source}**.",
+    sharedUnshareable:
+      "🔗 Um jogo novo apareceu no grupo: **{game}** (já pertencia a **{source}**, não compatível com Family Sharing)",
     purchased: "🎮 **{buyer}** comprou um jogo novo: **{game}**",
     purchasedUnshareable:
       "🎮 **{buyer}** comprou um jogo novo: **{game}** (não compatível com Family Sharing, não contabilizado no ranking)",
@@ -52,7 +56,10 @@ export function renderGameMessage(
   const text = messages[language];
 
   if (attribution.kind === "shared") {
-    return replace(text.shared, { game: game.name, source: attribution.sourceName });
+    return replace(isFamilyShareable ? text.shared : text.sharedUnshareable, {
+      game: game.name,
+      source: attribution.sourceName,
+    });
   }
 
   if (attribution.kind === "ambiguous") {

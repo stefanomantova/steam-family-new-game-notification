@@ -76,7 +76,6 @@ export async function checkNewGames(
       game,
       previousState,
       config.members,
-      details.isFamilyShareable,
     );
     if (attribution.kind === "purchased" && details.price.kind === "paid" && details.isFamilyShareable) {
       const buyerName = config.members[attribution.buyerSteamId] ?? attribution.buyerSteamId;

@@ -87,7 +87,7 @@ describe("attributeGame", () => {
     expect(attributeGame(game, {}, members)).toEqual({ kind: "ambiguous" });
   });
 
-  it("attributes an unshareable game as a purchase even if an existing member had it", () => {
+  it("finds a prior owner regardless of shareability", () => {
     const previous: LibrarySnapshot = {
       alice: { "2": "Unshareable Game" },
       bob: { "1": "Old Game" },
@@ -98,9 +98,9 @@ describe("attributeGame", () => {
       recipientSteamIds: ["bob"],
     };
 
-    expect(attributeGame(game, previous, members, false)).toEqual({
-      kind: "purchased",
-      buyerSteamId: "bob",
+    expect(attributeGame(game, previous, members)).toEqual({
+      kind: "shared",
+      sourceName: "Alice",
     });
   });
 });

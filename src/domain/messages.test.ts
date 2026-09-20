@@ -26,6 +26,21 @@ describe("message rendering", () => {
     ).toBe("🔗 A new game is available on Family Sharing! **New Game**, shared by **Bob**.");
   });
 
+  it("renders a shared unshareable game without claiming Family Sharing eligibility", () => {
+    expect(
+      renderGameMessage(
+        game,
+        { kind: "shared", sourceName: "Bob" },
+        { kind: "paid", priceCents: 1000, fromBundle: false },
+        { alice: "Alice" },
+        "EN",
+        false,
+      ),
+    ).toBe(
+      "🔗 A new game appeared for the group: **New Game** (already owned by **Bob**, not eligible for Family Sharing)",
+    );
+  });
+
   it("renders unknown-price purchases without inventing a value", () => {
     expect(
       renderGameMessage(game, { kind: "purchased", buyerSteamId: "alice" }, { kind: "unknown" }, { alice: "Alice" }, "EN"),

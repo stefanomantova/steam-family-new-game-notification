@@ -150,4 +150,39 @@ describe("checkNewGames", () => {
       "🎮 **Alice** bought a new game: **New Game** (not eligible for Family Sharing, not counted in the ranking)",
     ]);
   });
+
+  it("attributes an unshareable game to a prior owner without updating stats", async () => {
+    const initialState: LibrarySnapshot = {
+      alice: { "1": "Old Game", "2": "New Game" },
+      bob: { "1": "Old Game" },
+    };
+    const initialStats: PurchaseStats = { currency: null, members: {} };
+    const testContext = dependencies(initialState, initialStats);
+    testContext.dependencies.steam.fetchOwnedGames = async (steamId: string): Promise<Library> =>
+      steamId === "alice" ? { "1": "Old Game", "2": "New Game" } : { "1": "Old Game", "2": "New Game" };
+    testContext.dependencies.store.fetchGameDetails = async () => ({
+      price: {
+        kind: "paid" as const,
+        priceCents: 2500,
+        currency: "BRL",
+        fromBundle: false,
+      },
+      isFamilyShareable: false,
+    });
+
+    const report = await checkNewGames(
+      {
+        members: { alice: "Alice", bob: "Bob" },
+        storeCountryCode: "br",
+        messageLanguage: "EN",
+      },
+      testContext.dependencies,
+    );
+
+    expect(report.statsChanged).toBe(false);
+    expect(testContext.getSavedStats().members).toEqual({});
+    expect(testContext.messages).toEqual([
+      "🔗 A new game appeared for the group: **New Game** (already owned by **Alice**, not eligible for Family Sharing)",
+    ]);
+  });
 });
